@@ -20,24 +20,18 @@ package plugins
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
 //
-// Register is the first method to be called after creating a New plugin,
-// instance. upon register the plugin will check if it is Authorized and
-// Installed and send it over State.
-//
 // Poll interacts with the backend service with the means the plugin defines
 // and  returns a list of Notifications to send to the Push service. If an
 // error occurs and is returned the daemon can decide to throttle the service.
 //
-// GetType is for future use and helps the daemon determine the polling
-// frequency.
+// ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
-	Register() (ApplicationId, chan (State))
-	Unregister()
-	Poll() (*[]Notification, error)
-	//GetPriority() int
-	//GetType() int
-	//Notify()
+	ApplicationId() ApplicationId
+	Poll(AuthTokens) (*[]Notification, error)
 }
+
+// AuthTokens is a map with tokens the plugins are to use to make requests.
+type AuthTokens map[string]interface{}
 
 // ApplicationId represents the application id to direct posts to.
 // e.g.: com.ubuntu.diaspora_diaspora or com.ubuntu.diaspora_diaspora_1.0
@@ -47,6 +41,11 @@ type Plugin interface {
 type ApplicationId string
 
 // Notification represents the data pass over to the Post Office
+// It's up to the plugin to determine if multiple Notification cards
+// should be bundled together or to present them separately.
+//
+// The daemon can determine to throttle these depending on the
+// quantity.
 type Notification struct {
 	Sound string `json:"sound"`
 	Card  Card   `json:"card"`
@@ -56,13 +55,6 @@ type Card struct {
 	Summary string `json:"summary"`
 	Popup   bool   `json:"popup"`
 	Persist bool   `json:"persist"`
-}
-
-// State represents a state change for a plugin. Installed is set to true when
-// the package that is supposed to handle the notification is installed whilst
-// Authorized being true means that at least one account is authorized to poll
-type State struct {
-	Installed, Authorized bool
 }
 
 // The constanst defined here determine the polling aggressivenes with the following criteria
