@@ -20,9 +20,9 @@ package plugins
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
 //
-// Register is the first method to be called after creating a New[plugin],
-// upon register the plugin will check if it is Authorized and Installed
-// and send it over State.
+// Register is the first method to be called after creating a New plugin,
+// instance. upon register the plugin will check if it is Authorized and
+// Installed and send it over State.
 //
 // Poll interacts with the backend service with the means the plugin defines
 // and  returns a list of Notifications to send to the Push service. If an
@@ -32,6 +32,7 @@ package plugins
 // frequency.
 type Plugin interface {
 	Register() (ApplicationId, chan (State))
+	Unregister()
 	Poll() (*[]Notification, error)
 	//GetPriority() int
 	//GetType() int
