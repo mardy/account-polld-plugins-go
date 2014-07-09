@@ -22,23 +22,16 @@ import "launchpad.net/account-polld/plugins"
 const APP_ID = "com.ubuntu.developer.webapps.webapp-gmail"
 
 type GmailPlugin struct {
-	state      plugins.State
-	stateWatch chan (plugins.State)
 }
 
 func New() *GmailPlugin {
 	return &GmailPlugin{}
 }
 
-func (p *GmailPlugin) Poll() (*[]plugins.Notification, error) {
+func (p *GmailPlugin) Poll(tokens plugins.AuthTokens) (*[]plugins.Notification, error) {
 	return nil, nil
 }
 
-func (p *GmailPlugin) Register() (plugins.ApplicationId, chan (plugins.State)) {
-	p.stateWatch = make(chan plugins.State)
-	return plugins.ApplicationId(APP_ID), p.stateWatch
-}
-
-func (p *GmailPlugin) Unregister() {
-	close(p.stateWatch)
+func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
+	return plugins.ApplicationId(APP_ID)
 }
