@@ -17,7 +17,10 @@
 
 package gmail
 
-import "launchpad.net/account-polld/plugins"
+import (
+	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/plugins"
+)
 
 const APP_ID = "com.ubuntu.developer.webapps.webapp-gmail"
 
@@ -28,7 +31,7 @@ func New() *GmailPlugin {
 	return &GmailPlugin{}
 }
 
-func (p *GmailPlugin) Poll(tokens plugins.AuthTokens) (*[]plugins.Notification, error) {
+func (p *GmailPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, error) {
 	return nil, nil
 }
 

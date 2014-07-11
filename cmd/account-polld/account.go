@@ -21,39 +21,29 @@ import (
 	"log"
 	"time"
 
+	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
 )
 
 type Account struct {
-	id           string
+	authData     *accounts.AuthData
 	plugin       plugins.Plugin
-	tokens       plugins.AuthTokens
 	interval     time.Duration
-	accountWatch chan plugins.AuthTokens
 	installWatch chan bool
 }
 
-func NewAccount(id, plugin string) *Account {
-	var p plugins.Plugin
-	var interval time.Duration
+const DEFAULT_INTERVAL = time.Duration(10 * time.Second)
 
-	switch plugin {
-	case "gmail":
-		p = gmail.New()
-		interval = 10 * time.Second
-	}
+func NewAccount(authData *accounts.AuthData, plugin plugins.Plugin) *Account {
 	return &Account{
-		id:           id,
-		plugin:       p,
-		interval:     interval,
-		accountWatch: make(chan plugins.AuthTokens),
+		plugin:       plugin,
+		authData:     authData,
+		interval:     DEFAULT_INTERVAL,
 		installWatch: make(chan bool),
 	}
 }
 
 func (a *Account) Delete() {
-	close(a.accountWatch)
 	close(a.installWatch)
 }
 
@@ -61,11 +51,9 @@ func (a *Account) Loop(postWatch chan *PostWatch) {
 	log.Println("Polling set to", a.interval)
 	for {
 		select {
-		case t := <-a.accountWatch:
-			a.tokens = t
 		case <-time.After(a.interval):
-			if n, err := a.plugin.Poll(a.tokens); err != nil {
-				log.Print("Error while polling ", a.id, ": ", err)
+			if n, err := a.plugin.Poll(a.authData); err != nil {
+				log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 				continue
 			} else if n != nil {
 				postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}

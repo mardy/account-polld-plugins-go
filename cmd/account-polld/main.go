@@ -22,7 +22,9 @@ import (
 
 	"log"
 
+	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/go-dbus/v1"
 )
 
@@ -31,10 +33,17 @@ type PostWatch struct {
 	notifications *[]plugins.Notification
 }
 
+const (
+	SERVICENAME_GMAIL    = "google-gmail"
+	SERVICENAME_TWITTER  = "twitter-microblog"
+	SERVICENAME_FACEBOOK = "facebook-microblog"
+)
+
+func init() {
+}
+
 func main() {
 	// TODO NewAccount called here is just for playing purposes.
-	a := NewAccount("sergiusens@gmail.com", "gmail")
-	defer a.Delete()
 	postWatch := make(chan *PostWatch)
 
 	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
@@ -43,10 +52,40 @@ func main() {
 		go postOffice(bus, postWatch)
 	}
 
-	go a.Loop(postWatch)
+	go monitorAccounts(postWatch)
 
 	done := make(chan bool)
 	<-done
+}
+
+func monitorAccounts(postWatch chan *PostWatch) {
+	acc := make(map[uint]*Account)
+L:
+	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
+		if account, ok := acc[data.AccountId]; ok {
+			account.authData = &data
+		} else {
+			var plugin plugins.Plugin
+			switch data.ServiceName {
+			case SERVICENAME_GMAIL:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = gmail.New()
+			case SERVICENAME_FACEBOOK:
+				// This is just stubbed until the plugin exists.
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			case SERVICENAME_TWITTER:
+				// This is just stubbed until the plugin exists.
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			default:
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			}
+			acc[data.AccountId] = NewAccount(&data, plugin)
+			go acc[data.AccountId].Loop(postWatch)
+		}
+	}
 }
 
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
