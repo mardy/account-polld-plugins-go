@@ -71,6 +71,9 @@ func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char,
 	var data AuthData
 	data.AccountId = uint(accountId)
 	data.ServiceName = C.GoString(serviceName)
+	if enabled != 0 {
+		data.Enabled = true
+	}
 	if clientId != nil {
 		data.ClientId = C.GoString(clientId)
 	}
