@@ -1,10 +1,4 @@
 #include "_cgo_export.h"
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <glib.h>
-
 #include "account-watcher.h"
 
 AccountWatcher *watch_for_services(void *array_of_service_names, int length) {
