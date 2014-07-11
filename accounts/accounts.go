@@ -22,49 +22,58 @@ package accounts
 #include <stdlib.h>
 #include <glib.h>
 
-typedef struct _AuthContext AuthContext;
+typedef struct _AccountWatcher AccountWatcher;
 
-AuthContext *watch_for_service(const char *service_name);
+AccountWatcher *watch_for_services(void *array_of_service_names, int length);
 */
 import "C"
 import "unsafe"
 
 type AuthData struct {
+	AccountId   uint
+	ServiceName string
+	Enabled     bool
+
 	ClientId     string
 	ClientSecret string
 	AccessToken  string
+	TokenSecret  string
 }
 
 var (
 	mainLoop     *C.GMainLoop
-	authChannels = make(map[*C.AuthContext]chan<- AuthData)
+	authChannels = make(map[*C.AccountWatcher]chan<- AuthData)
 )
 
-func WatchForService(serviceName string) <-chan AuthData {
+func WatchForService(serviceNames... string) <-chan AuthData {
 	if mainLoop == nil {
 		mainLoop = C.g_main_loop_new(nil, C.gboolean(1))
 		go C.g_main_loop_run(mainLoop)
 	}
 
-	cService := C.CString(serviceName)
-	defer C.free(unsafe.Pointer(cService))
-	ctx := C.watch_for_service(cService)
+	watcher := C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
 
 	ch := make(chan AuthData)
-	authChannels[ctx] = ch
+	authChannels[watcher] = ch
 	return ch
 }
 
-//export authLogin
-func authLogin(user_data unsafe.Pointer, clientId *C.char, clientSecret *C.char, accessToken *C.char) {
-	ctx := (*C.AuthContext)(user_data)
-	ch := authChannels[ctx]
+//export authCallback
+func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
+	// Ideally the first argument would be of type
+	// *C.AccountWatcher, but that fails with Go 1.2.
+	ch := authChannels[(*C.AccountWatcher)(watcher)]
 	if ch == nil {
 		// Log the error
 		return
 	}
 
 	var data AuthData
+	data.AccountId = uint(accountId)
+	data.ServiceName = C.GoString(serviceName)
+	if enabled != 0 {
+		data.Enabled = true
+	}
 	if clientId != nil {
 		data.ClientId = C.GoString(clientId)
 	}
@@ -73,6 +82,9 @@ func authLogin(user_data unsafe.Pointer, clientId *C.char, clientSecret *C.char,
 	}
 	if accessToken != nil {
 		data.AccessToken = C.GoString(accessToken)
+	}
+	if tokenSecret != nil {
+		data.TokenSecret = C.GoString(tokenSecret)
 	}
 	ch <- data
 }
