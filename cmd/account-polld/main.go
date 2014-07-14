@@ -63,6 +63,7 @@ func monitorAccounts(postWatch chan *PostWatch) {
 L:
 	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
 		if account, ok := acc[data.AccountId]; ok {
+			log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
 			account.authData = &data
 		} else {
 			var plugin plugins.Plugin
