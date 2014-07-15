@@ -25,39 +25,48 @@ import (
 	"launchpad.net/account-polld/plugins"
 )
 
-type Account struct {
-	authData     *accounts.AuthData
-	plugin       plugins.Plugin
-	interval     time.Duration
-	installWatch chan bool
+type AccountManager struct {
+	authData  accounts.AuthData
+	plugin    plugins.Plugin
+	interval  time.Duration
+	terminate chan bool
 }
 
-const DEFAULT_INTERVAL = time.Duration(10 * time.Second)
+const DEFAULT_INTERVAL = time.Duration(60 * time.Second)
 
-func NewAccount(authData *accounts.AuthData, plugin plugins.Plugin) *Account {
-	return &Account{
-		plugin:       plugin,
-		authData:     authData,
-		interval:     DEFAULT_INTERVAL,
-		installWatch: make(chan bool),
+func NewAccountManager(authData accounts.AuthData, plugin plugins.Plugin) *AccountManager {
+	return &AccountManager{
+		plugin:    plugin,
+		authData:  authData,
+		interval:  DEFAULT_INTERVAL,
+		terminate: make(chan bool),
 	}
 }
 
-func (a *Account) Delete() {
-	close(a.installWatch)
+func (a *AccountManager) Delete() {
+	a.terminate <- true
 }
 
-func (a *Account) Loop(postWatch chan *PostWatch) {
-	log.Println("Polling set to", a.interval)
+func (a *AccountManager) Loop(postWatch chan *PostWatch) {
+	defer close(a.terminate)
+L:
 	for {
+		log.Println("Polling set to", a.interval)
 		select {
 		case <-time.After(a.interval):
-			if n, err := a.plugin.Poll(a.authData); err != nil {
+			if n, err := a.plugin.Poll(&a.authData); err != nil {
 				log.Print("Error while polling ", a.authData.AccountId, ": ", err)
+				// penalizing the next poll
+				a.interval += DEFAULT_INTERVAL
 				continue
 			} else if n != nil {
+				// on success we reset the timeout to the default interval
+				a.interval = DEFAULT_INTERVAL
 				postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}
 			}
+		case <-a.terminate:
+			break L
 		}
 	}
+	log.Printf("Ending poll loop for account %d", a.authData.AccountId)
 }

@@ -59,13 +59,18 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch) {
-	acc := make(map[uint]*Account)
+	mgr := make(map[uint]*AccountManager)
 L:
 	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
-		if account, ok := acc[data.AccountId]; ok {
+		if account, ok := mgr[data.AccountId]; ok {
 			log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
-			account.authData = &data
-		} else {
+			if data.Enabled {
+				account.authData = data
+			} else {
+				account.Delete()
+				delete(mgr, data.AccountId)
+			}
+		} else if data.Enabled {
 			var plugin plugins.Plugin
 			switch data.ServiceName {
 			case SERVICENAME_GMAIL:
@@ -83,8 +88,8 @@ L:
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				continue L
 			}
-			acc[data.AccountId] = NewAccount(&data, plugin)
-			go acc[data.AccountId].Loop(postWatch)
+			mgr[data.AccountId] = NewAccountManager(data, plugin)
+			go mgr[data.AccountId].Loop(postWatch)
 		}
 	}
 }
@@ -92,7 +97,7 @@ L:
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
 		for _, n := range *post.notifications {
-			fmt.Println("Should be dispathing", n, "to the post office using", bus.UniqueName, "for", post.appId)
+			fmt.Println("Should be dispatching", n, "to the post office using", bus.UniqueName, "for", post.appId)
 		}
 	}
 }
