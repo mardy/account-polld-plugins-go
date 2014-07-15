@@ -22,7 +22,9 @@ import (
 
 	"log"
 
+	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/go-dbus/v1"
 )
 
@@ -31,10 +33,17 @@ type PostWatch struct {
 	notifications *[]plugins.Notification
 }
 
+const (
+	SERVICENAME_GMAIL    = "google-gmail"
+	SERVICENAME_TWITTER  = "twitter-microblog"
+	SERVICENAME_FACEBOOK = "facebook-microblog"
+)
+
+func init() {
+}
+
 func main() {
 	// TODO NewAccount called here is just for playing purposes.
-	a := NewAccount("sergiusens@gmail.com", "gmail")
-	defer a.Delete()
 	postWatch := make(chan *PostWatch)
 
 	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
@@ -43,16 +52,52 @@ func main() {
 		go postOffice(bus, postWatch)
 	}
 
-	go a.Loop(postWatch)
+	go monitorAccounts(postWatch)
 
 	done := make(chan bool)
 	<-done
 }
 
+func monitorAccounts(postWatch chan *PostWatch) {
+	mgr := make(map[uint]*AccountManager)
+L:
+	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
+		if account, ok := mgr[data.AccountId]; ok {
+			log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
+			if data.Enabled {
+				account.authData = data
+			} else {
+				account.Delete()
+				delete(mgr, data.AccountId)
+			}
+		} else if data.Enabled {
+			var plugin plugins.Plugin
+			switch data.ServiceName {
+			case SERVICENAME_GMAIL:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = gmail.New()
+			case SERVICENAME_FACEBOOK:
+				// This is just stubbed until the plugin exists.
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			case SERVICENAME_TWITTER:
+				// This is just stubbed until the plugin exists.
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			default:
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				continue L
+			}
+			mgr[data.AccountId] = NewAccountManager(data, plugin)
+			go mgr[data.AccountId].Loop(postWatch)
+		}
+	}
+}
+
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
 		for _, n := range *post.notifications {
-			fmt.Println("Should be dispathing", n, "to the post office using", bus.UniqueName, "for", post.appId)
+			fmt.Println("Should be dispatching", n, "to the post office using", bus.UniqueName, "for", post.appId)
 		}
 	}
 }

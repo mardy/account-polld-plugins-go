@@ -17,6 +17,10 @@
 
 package plugins
 
+import (
+	"launchpad.net/account-polld/accounts"
+)
+
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
 //
@@ -27,7 +31,7 @@ package plugins
 // ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
 	ApplicationId() ApplicationId
-	Poll(AuthTokens) (*[]Notification, error)
+	Poll(*accounts.AuthData) (*[]Notification, error)
 }
 
 // AuthTokens is a map with tokens the plugins are to use to make requests.
