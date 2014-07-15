@@ -51,7 +51,7 @@ func (a *AccountManager) Loop(postWatch chan *PostWatch) {
 	defer close(a.terminate)
 L:
 	for {
-		log.Println("Polling set to", a.interval)
+		log.Println("Polling set to", a.interval, "for", a.authData.AccountId)
 		select {
 		case <-time.After(a.interval):
 			if n, err := a.plugin.Poll(&a.authData); err != nil {
