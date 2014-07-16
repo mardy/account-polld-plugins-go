@@ -28,17 +28,21 @@ import (
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
-type fbPlugin struct {}
-
-func New() plugins.Plugin {
-	return fbPlugin{}
+type fbPlugin struct {
+	lastUpdate string
 }
 
-func (p fbPlugin) ApplicationId() plugins.ApplicationId {
+func New() plugins.Plugin {
+	return &fbPlugin{
+		lastUpdate: "",
+	}
+}
+
+func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
 	return "com.ubuntu.developer.webapps.webapp-facebook"
 }
 
-func (p fbPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
+func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
 	// Resolve path relative to Graph API base URL, and add access token
 	u, err := baseUrl.Parse(path)
 	if err != nil {
@@ -51,7 +55,7 @@ func (p fbPlugin) request(authData *accounts.AuthData, path string) (*http.Respo
 	return http.Get(u.String())
 }
 
-func (p fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, error) {
+func (p *fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
@@ -68,17 +72,25 @@ func (p fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, e
 		return nil, err
 	}
 	notifications := []plugins.Notification{}
+	latestUpdate := ""
 	for _, n := range result.Data {
+		if n.UpdatedTime <= p.lastUpdate {
+			continue
+		}
 		notifications = append(notifications, plugins.Notification{
 			Card: plugins.Card{
 				Summary: n.Title,
 			},
 		})
+		if n.UpdatedTime > latestUpdate {
+			latestUpdate = n.UpdatedTime
+		}
 	}
+	p.lastUpdate = latestUpdate
 	return &notifications, nil
 }
 
-func (p fbPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, error) {
+func (p *fbPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, error) {
 	resp, err := p.request(authData, "me/notifications")
 	if err != nil {
 		return nil, err
