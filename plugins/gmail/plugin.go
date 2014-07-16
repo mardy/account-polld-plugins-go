@@ -31,7 +31,7 @@ func New() *GmailPlugin {
 	return &GmailPlugin{}
 }
 
-func (p *GmailPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, error) {
+func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.Notification, error) {
 	return nil, nil
 }
 

@@ -31,7 +31,7 @@ import (
 // ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
 	ApplicationId() ApplicationId
-	Poll(*accounts.AuthData) (*[]Notification, error)
+	Poll(*accounts.AuthData) ([]Notification, error)
 }
 
 // AuthTokens is a map with tokens the plugins are to use to make requests.

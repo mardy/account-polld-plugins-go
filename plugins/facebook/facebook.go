@@ -55,7 +55,7 @@ func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Resp
 	return http.Get(u.String())
 }
 
-func (p *fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, error) {
+func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.Notification, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
@@ -87,10 +87,10 @@ func (p *fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, 
 		}
 	}
 	p.lastUpdate = latestUpdate
-	return &notifications, nil
+	return notifications, nil
 }
 
-func (p *fbPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, error) {
+func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.Notification, error) {
 	resp, err := p.request(authData, "me/notifications")
 	if err != nil {
 		return nil, err

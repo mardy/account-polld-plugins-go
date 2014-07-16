@@ -59,7 +59,7 @@ L:
 				// penalizing the next poll
 				a.interval += DEFAULT_INTERVAL
 				continue
-			} else if n != nil {
+			} else if len(n) > 0 {
 				// on success we reset the timeout to the default interval
 				a.interval = DEFAULT_INTERVAL
 				postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}

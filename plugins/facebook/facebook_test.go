@@ -112,14 +112,14 @@ func TestParseNotifications(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error:", err)
 	}
-	if len(*notifications) != 2 {
-		t.Fatal("Expected 2 notifications, got ", len(*notifications))
+	if len(notifications) != 2 {
+		t.Fatal("Expected 2 notifications, got ", len(notifications))
 	}
-	if (*notifications)[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
-		t.Error("Bad summary for first notification:", (*notifications)[0].Card.Summary)
+	if notifications[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
+		t.Error("Bad summary for first notification:", notifications[0].Card.Summary)
 	}
-	if (*notifications)[1].Card.Summary != "Sender2's birthday was on July 7." {
-		t.Error("Bad summary for second notification:", (*notifications)[0].Card.Summary)
+	if notifications[1].Card.Summary != "Sender2's birthday was on July 7." {
+		t.Error("Bad summary for second notification:", notifications[0].Card.Summary)
 	}
 	if p.lastUpdate != "2014-07-12T09:51:57+0000" {
 		t.Error("Unexpected last update time:", p.lastUpdate)
@@ -136,11 +136,11 @@ func TestIgnoreOldNotifications(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unexpected error:", err)
 	}
-	if len(*notifications) != 1 {
-		t.Fatal("Expected 1 notification, got ", len(*notifications))
+	if len(notifications) != 1 {
+		t.Fatal("Expected 1 notification, got ", len(notifications))
 	}
-	if (*notifications)[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
-		t.Error("Bad summary for first notification:", (*notifications)[0].Card.Summary)
+	if notifications[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
+		t.Error("Bad summary for first notification:", notifications[0].Card.Summary)
 	}
 	if p.lastUpdate != "2014-07-12T09:51:57+0000" {
 		t.Error("Unexpected last update time:", p.lastUpdate)

@@ -31,7 +31,7 @@ import (
 
 type PostWatch struct {
 	appId         plugins.ApplicationId
-	notifications *[]plugins.Notification
+	notifications []plugins.Notification
 }
 
 const (
@@ -97,7 +97,7 @@ L:
 
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
-		for _, n := range *post.notifications {
+		for _, n := range post.notifications {
 			fmt.Println("Should be dispatching", n, "to the post office using", bus.UniqueName, "for", post.appId)
 		}
 	}
