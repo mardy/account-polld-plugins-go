@@ -19,6 +19,7 @@ package main
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"launchpad.net/account-polld/accounts"
@@ -27,17 +28,21 @@ import (
 
 type AccountManager struct {
 	authData  accounts.AuthData
+	authMutex *sync.Mutex
 	plugin    plugins.Plugin
 	interval  time.Duration
+	postWatch chan *PostWatch
 	terminate chan bool
 }
 
 const DEFAULT_INTERVAL = time.Duration(60 * time.Second)
 
-func NewAccountManager(authData accounts.AuthData, plugin plugins.Plugin) *AccountManager {
+func NewAccountManager(authData accounts.AuthData, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
 		plugin:    plugin,
 		authData:  authData,
+		authMutex: &sync.Mutex{},
+		postWatch: postWatch,
 		interval:  DEFAULT_INTERVAL,
 		terminate: make(chan bool),
 	}
@@ -47,26 +52,43 @@ func (a *AccountManager) Delete() {
 	a.terminate <- true
 }
 
-func (a *AccountManager) Loop(postWatch chan *PostWatch) {
+func (a *AccountManager) Loop() {
 	defer close(a.terminate)
 L:
 	for {
 		log.Println("Polling set to", a.interval, "for", a.authData.AccountId)
 		select {
 		case <-time.After(a.interval):
-			if n, err := a.plugin.Poll(&a.authData); err != nil {
-				log.Print("Error while polling ", a.authData.AccountId, ": ", err)
-				// penalizing the next poll
-				a.interval += DEFAULT_INTERVAL
-				continue
-			} else if n != nil {
-				// on success we reset the timeout to the default interval
-				a.interval = DEFAULT_INTERVAL
-				postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}
-			}
+			a.poll()
 		case <-a.terminate:
 			break L
 		}
 	}
 	log.Printf("Ending poll loop for account %d", a.authData.AccountId)
+}
+
+func (a *AccountManager) poll() {
+	a.authMutex.Lock()
+	defer a.authMutex.Unlock()
+
+	if !a.authData.Enabled {
+		log.Println("Account", a.authData.AccountId, "no longer enabled")
+		return
+	}
+
+	if n, err := a.plugin.Poll(&a.authData); err != nil {
+		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
+		// penalizing the next poll
+		a.interval += DEFAULT_INTERVAL
+	} else if n != nil {
+		// on success we reset the timeout to the default interval
+		a.interval = DEFAULT_INTERVAL
+		a.postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}
+	}
+}
+
+func (a *AccountManager) updateAuthData(authData accounts.AuthData) {
+	a.authMutex.Lock()
+	defer a.authMutex.Unlock()
+	a.authData = authData
 }
