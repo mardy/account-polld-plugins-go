@@ -64,7 +64,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, 
 		if err := decoder.Decode(&result); err != nil {
 			return nil, err
 		}
-		return nil, result.Error
+		return nil, &result.Error
 	}
 
 	var result notificationDoc
@@ -139,6 +139,6 @@ type GraphError struct {
 	Subcode int    `json:"error_subcode"`
 }
 
-func (err GraphError) Error() string {
+func (err *GraphError) Error() string {
 	return err.Message
 }

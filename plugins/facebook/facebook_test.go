@@ -160,7 +160,7 @@ func TestErrorResponse(t *testing.T) {
 	if notifications != nil {
 		t.Error("Expected notifications to be nil on error.")
 	}
-	graphErr := err.(GraphError)
+	graphErr := err.(*GraphError)
 	if graphErr.Message != "Message describing the error" {
 		t.Errorf("Unexpected error message: '%s'", graphErr.Message)
 	}
