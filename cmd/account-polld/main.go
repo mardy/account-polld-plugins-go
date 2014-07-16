@@ -18,7 +18,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"log"
 
@@ -29,14 +31,20 @@ import (
 )
 
 type PostWatch struct {
-	appId         plugins.ApplicationId
-	notifications *[]plugins.Notification
+	appId    plugins.ApplicationId
+	messages []plugins.PushMessage
 }
 
 const (
 	SERVICENAME_GMAIL    = "google-gmail"
 	SERVICENAME_TWITTER  = "twitter-microblog"
 	SERVICENAME_FACEBOOK = "facebook-microblog"
+)
+
+const (
+	POSTAL_SERVICE          = "com.ubuntu.Postal"
+	POSTAL_INTERFACE        = "com.ubuntu.Postal"
+	POSTAL_OBJECT_PATH_PART = "/com/ubuntu/Postal/"
 )
 
 func init() {
@@ -96,8 +104,43 @@ L:
 
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
-		for _, n := range *post.notifications {
-			fmt.Println("Should be dispatching", n, "to the post office using", bus.UniqueName, "for", post.appId)
+		for _, n := range post.messages {
+			var pushMessage string
+			if out, err := json.Marshal(n); err == nil {
+				pushMessage = string(out)
+			} else {
+				log.Printf("Cannot marshall %#v to json: %s", n, err)
+				continue
+			}
+			obj := bus.Object(POSTAL_SERVICE, pushObjectPath(post.appId))
+			if _, err := obj.Call(POSTAL_INTERFACE, "Post", post.appId, pushMessage); err != nil {
+				log.Println("Cannot call the Post Office:", err)
+				log.Println("Message missed posting:", pushMessage)
+			}
 		}
 	}
+}
+
+// pushObjectPath returns the object path of the ApplicationId
+// for Push Notifications with the Quoted Package Name in the form of
+// /com/ubuntu/PushNotifications/QUOTED_PKGNAME
+//
+// e.g.; if the APP_ID is com.ubuntu.music", the returned object path
+// would be "/com/ubuntu/PushNotifications/com_2eubuntu_2eubuntu_2emusic
+func pushObjectPath(id plugins.ApplicationId) dbus.ObjectPath {
+	idParts := strings.Split(string(id), "_")
+	if len(idParts) < 2 {
+		panic(fmt.Sprintf("APP_ID '%s' is not valid", id))
+	}
+
+	pkg := POSTAL_OBJECT_PATH_PART
+	for _, c := range idParts[0] {
+		switch c {
+		case '+', '.', '-', ':', '~', '_':
+			pkg += fmt.Sprintf("_%x", string(c))
+		default:
+			pkg += string(c)
+		}
+	}
+	return dbus.ObjectPath(pkg)
 }
