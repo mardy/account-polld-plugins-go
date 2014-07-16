@@ -98,11 +98,8 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) (*[]plugins.Notification, e
 	return p.parseResponse(resp)
 }
 
-type object struct {
-	Id string `json:"id"`
-	Name string `json:"name"`
-}
-
+// The notifications response format is described here:
+// https://developers.facebook.com/docs/graph-api/reference/v2.0/user/notifications/
 type notificationDoc struct {
 	Data []notification `json:"data"`
 	Paging struct {
@@ -124,6 +121,13 @@ type notification struct {
 	Object object `json:"object"`
 }
 
+type object struct {
+	Id string `json:"id"`
+	Name string `json:"name"`
+}
+
+// The error response format is described here:
+// https://developers.facebook.com/docs/graph-api/using-graph-api/v2.0#errors
 type errorDoc struct {
 	Error GraphError `json:"error"`
 }
