@@ -19,7 +19,6 @@ package facebook
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -68,7 +67,6 @@ func (p fbPlugin) parseResponse(resp *http.Response) (*[]plugins.Notification, e
 	if err := decoder.Decode(&result); err != nil {
 		return nil, err
 	}
-	fmt.Println(result.Data)
 	notifications := []plugins.Notification{}
 	for _, n := range result.Data {
 		notifications = append(notifications, plugins.Notification{
