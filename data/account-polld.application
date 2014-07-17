@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application id="account-polld">
+  <description>Account Polling</description>
+  <desktop-entry>account-polld.desktop</desktop-entry>
+  <translations>account-polld</translations>
+
+  <services>
+    <service id="google-gmail-poll">
+      <description>Get notifications for your email</description>
+    </service>
+    <service id="facebook-microblog">
+      <description>Get notifications for facebook</description>
+    </service>
+    <service id="twitter-microblog">
+      <description>Get notifications for twitter</description>
+    </service>
+  </services>
+</application>

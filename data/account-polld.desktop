@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=Office;
+Exec=
+GenericName=account-polld
+Name=Notifications
+NoDisplay=true
+Terminal=false
+Type=Application
+Icon=intouch
+X-Ubuntu-Gettext-Domain=account-polld
