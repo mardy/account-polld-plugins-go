@@ -103,7 +103,7 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.Notification, er
 // The notifications response format is described here:
 // https://developers.facebook.com/docs/graph-api/reference/v2.0/user/notifications/
 type notificationDoc struct {
-	Data []notification `json:"data"`
+	Data   []notification `json:"data"`
 	Paging struct {
 		Previous string `json:"previous"`
 		Next     string `json:"next"`
@@ -111,20 +111,20 @@ type notificationDoc struct {
 }
 
 type notification struct {
-	Id string `json:"id"`
-	From object `json:"from"`
-	To object `json:"to"`
+	Id          string `json:"id"`
+	From        object `json:"from"`
+	To          object `json:"to"`
 	CreatedTime string `json:"created_time"`
 	UpdatedTime string `json:"updated_time"`
-	Title string `json:"title"`
-	Link string `json:"link"`
+	Title       string `json:"title"`
+	Link        string `json:"link"`
 	Application object `json:"application"`
-	Unread int `json:"unread"`
-	Object object `json:"object"`
+	Unread      int    `json:"unread"`
+	Object      object `json:"object"`
 }
 
 type object struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
 	Name string `json:"name"`
 }
 

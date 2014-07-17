@@ -105,7 +105,7 @@ const (
 func TestParseNotifications(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
-		Body: closeWrapper{bytes.NewReader([]byte(notificationsBody))},
+		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{}
 	notifications, err := p.parseResponse(resp)
@@ -129,7 +129,7 @@ func TestParseNotifications(t *testing.T) {
 func TestIgnoreOldNotifications(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
-		Body: closeWrapper{bytes.NewReader([]byte(notificationsBody))},
+		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{lastUpdate: "2014-07-08T06:17:52+0000"}
 	notifications, err := p.parseResponse(resp)
@@ -150,7 +150,7 @@ func TestIgnoreOldNotifications(t *testing.T) {
 func TestErrorResponse(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusBadRequest,
-		Body: closeWrapper{bytes.NewReader([]byte(errorBody))},
+		Body:       closeWrapper{bytes.NewReader([]byte(errorBody))},
 	}
 	p := &fbPlugin{}
 	notifications, err := p.parseResponse(resp)
