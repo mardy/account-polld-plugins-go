@@ -80,7 +80,7 @@ func (a *AccountManager) poll() {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 		// penalizing the next poll
 		a.interval += DEFAULT_INTERVAL
-	} else if n != nil {
+	} else if len(n) > 0 {
 		// on success we reset the timeout to the default interval
 		a.interval = DEFAULT_INTERVAL
 		a.postWatch <- &PostWatch{notifications: n, appId: a.plugin.ApplicationId()}

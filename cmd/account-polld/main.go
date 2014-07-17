@@ -24,13 +24,14 @@ import (
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/facebook"
 	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/go-dbus/v1"
 )
 
 type PostWatch struct {
 	appId         plugins.ApplicationId
-	notifications *[]plugins.Notification
+	notifications []plugins.Notification
 }
 
 const (
@@ -78,8 +79,8 @@ L:
 				plugin = gmail.New()
 			case SERVICENAME_FACEBOOK:
 				// This is just stubbed until the plugin exists.
-				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
-				continue L
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = facebook.New()
 			case SERVICENAME_TWITTER:
 				// This is just stubbed until the plugin exists.
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
@@ -96,7 +97,7 @@ L:
 
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
-		for _, n := range *post.notifications {
+		for _, n := range post.notifications {
 			fmt.Println("Should be dispatching", n, "to the post office using", bus.UniqueName, "for", post.appId)
 		}
 	}
