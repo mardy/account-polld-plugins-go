@@ -22,7 +22,7 @@ import (
 	"launchpad.net/account-polld/plugins"
 )
 
-const APP_ID = "com.ubuntu.developer.webapps.webapp-gmail"
+const APP_ID = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 
 type GmailPlugin struct {
 }
@@ -31,8 +31,18 @@ func New() *GmailPlugin {
 	return &GmailPlugin{}
 }
 
-func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.Notification, error) {
-	return nil, nil
+func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+	// Stub message
+	n := plugins.PushMessage{
+		Notification: plugins.Notification{
+			Card: &plugins.Card{
+				Summary: "hello",
+				Persist: true,
+				Popup:   true,
+			},
+		},
+	}
+	return []plugins.PushMessage{n}, nil
 }
 
 func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {

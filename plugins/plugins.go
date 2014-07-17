@@ -17,9 +17,7 @@
 
 package plugins
 
-import (
-	"launchpad.net/account-polld/accounts"
-)
+import "launchpad.net/account-polld/accounts"
 
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
@@ -31,7 +29,7 @@ import (
 // ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
 	ApplicationId() ApplicationId
-	Poll(*accounts.AuthData) ([]Notification, error)
+	Poll(*accounts.AuthData) ([]PushMessage, error)
 }
 
 // AuthTokens is a map with tokens the plugins are to use to make requests.
@@ -39,26 +37,73 @@ type AuthTokens map[string]interface{}
 
 // ApplicationId represents the application id to direct posts to.
 // e.g.: com.ubuntu.diaspora_diaspora or com.ubuntu.diaspora_diaspora_1.0
-//
-// TODO define if APP_ID can be of short form
-// TODO find documentation where short APP_ID is defined (aka versionless APP_ID).
 type ApplicationId string
 
-// Notification represents the data pass over to the Post Office
-// It's up to the plugin to determine if multiple Notification cards
-// should be bundled together or to present them separately.
-//
-// The daemon can determine to throttle these depending on the
-// quantity.
-type Notification struct {
-	Sound string `json:"sound"`
-	Card  Card   `json:"card"`
+// PushMessage represents a data structure to be sent over to the
+// Post Office. It consists of a Notification and a Message.
+type PushMessage struct {
+	// Message represents a JSON object that is passed as-is to the
+	// application
+	Message string `json:"message,omitempty"`
+	// Notification (optional) describes the user-facing notifications
+	// triggered by this push message.
+	Notification Notification `json:"notification,omitempty"`
 }
 
+// Notification (optional) describes the user-facing notifications
+// triggered by this push message.
+type Notification struct {
+	// Sound (optional) is the path to a sound file which can or
+	// cannot be played depending on user preferences.
+	Sound string `json:"sound,omitempty"`
+	// Card represents a specific bubble to give to the user
+	Card *Card `json:"card,omitempty"`
+	// Vibrate is the haptic feedback part of a notification.
+	Vibrate *Vibrate `json:"vibrate,omitempty"`
+	// EmblemCounter represents and application counter hint
+	// related to the notification.
+	EmblemCounter *EmblemCounter `json:"emblem-counter,omitempty"`
+}
+
+// Card is part of a notification and represents the user visible hints for
+// a specific notification.
 type Card struct {
+	// Summary is a required title. The card will not be presented if this is missing.
 	Summary string `json:"summary"`
-	Popup   bool   `json:"popup"`
-	Persist bool   `json:"persist"`
+	// Body is the longer text.
+	Body string `json:"body,omitempty"`
+	// Whether to show a bubble. Users can disable this, and can easily miss
+	// them, so don’t rely on it exclusively.
+	Popup bool `json:"popup,omitempty"`
+	// Actions provides actions for the bubble's snap decissions.
+	Actions []string `json:"actions,omitempty"`
+	// Icon is a path to an icon to display with the notification bubble.
+	Icon string `json:"icon,omitempty"`
+	// Whether to show in notification centre.
+	Persist bool `json:"persist,omitempty"`
+}
+
+// Vibrate is part of a notification and represents the user haptic hints
+// for a specific notification.
+//
+// Duration cannot be used together with Pattern and Repeat.
+type Vibrate struct {
+	// Duration in milliseconds.
+	Duration uint `json:"duration,omitempty"`
+	// Pattern is a list of on->off durations that create a pattern.
+	Pattern []uint `json:"pattern,omitempty"`
+	// Repeat is the number of times a Pattern is to be repeated.
+	Repeat uint `json:"repeat,omitempty"`
+}
+
+// EmblemCounter is part of a notification and represents the application visual
+// hints related to a notification.
+type EmblemCounter struct {
+	// Count is a number to be displayed over the application’s icon in the
+	// launcher.
+	Count uint `json:"count"`
+	// Visible determines if the counter is visible or not.
+	Visible bool `json:"visible"`
 }
 
 // The constanst defined here determine the polling aggressivenes with the following criteria

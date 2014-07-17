@@ -53,7 +53,7 @@ func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Resp
 	return http.Get(u.String())
 }
 
-func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.Notification, error) {
+func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
@@ -73,15 +73,17 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.Notification, e
 	if err := decoder.Decode(&result); err != nil {
 		return nil, err
 	}
-	notifications := []plugins.Notification{}
+	pushMsg := []plugins.PushMessage{}
 	latestUpdate := ""
 	for _, n := range result.Data {
 		if n.UpdatedTime <= p.lastUpdate {
 			continue
 		}
-		notifications = append(notifications, plugins.Notification{
-			Card: plugins.Card{
-				Summary: n.Title,
+		pushMsg = append(pushMsg, plugins.PushMessage{
+			Notification: plugins.Notification{
+				Card: &plugins.Card{
+					Summary: n.Title,
+				},
 			},
 		})
 		if n.UpdatedTime > latestUpdate {
@@ -89,10 +91,10 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.Notification, e
 		}
 	}
 	p.lastUpdate = latestUpdate
-	return notifications, nil
+	return pushMsg, nil
 }
 
-func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.Notification, error) {
+func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
 	resp, err := p.request(authData, "me/notifications")
 	if err != nil {
 		return nil, err
