@@ -33,13 +33,11 @@ type fbPlugin struct {
 }
 
 func New() plugins.Plugin {
-	return &fbPlugin{
-		lastUpdate: "",
-	}
+	return &fbPlugin{}
 }
 
 func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
-	return "com.ubuntu.developer.webapps.webapp-facebook"
+	return "com.ubuntu.developer.webapps.webapp-facebook_webapp-facebook"
 }
 
 func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
@@ -67,6 +65,10 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.Notification, e
 		return nil, &result.Error
 	}
 
+	// TODO: Follow the "paging.next" link if we get more than one
+	// page full of notifications.  The default limit seems to be
+	// 5000 though, which we are unlikely to hit, since
+	// notifications are deleted once read.
 	var result notificationDoc
 	if err := decoder.Decode(&result); err != nil {
 		return nil, err
