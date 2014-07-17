@@ -34,7 +34,7 @@ type PostWatch struct {
 }
 
 const (
-	SERVICENAME_GMAIL    = "google-gmail"
+	SERVICENAME_GMAIL    = "google-gmail-poll"
 	SERVICENAME_TWITTER  = "twitter-microblog"
 	SERVICENAME_FACEBOOK = "facebook-microblog"
 )

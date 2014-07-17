@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<service id="google-gmail">
+<service id="google-gmail-poll">
   <type>mail</type>
   <name>GMail</name>
   <provider>google</provider>
@@ -13,8 +13,8 @@
         <group name="web_server">
           <setting type="as" name="Scope">['email','https://www.googleapis.com/auth/gmail.readonly']</setting>
           
-          <setting name="ClientId">759250720802-4sii0me9963n9fdqdmi7cepn6ub8luoh.apps.googleusercontent.com</setting>
-          <setting name="ClientSecret">juFngKUcuhB7IRQqHtSLavqJ</setting>
+          <setting name="ClientId">1034199289380-tt6btpkg3spjpj8rt4h89t558v15drpm@developer.gserviceaccount.com</setting>
+          <setting name="ClientSecret">fOpQF6NQvxKwMk5X2WffjgaI</setting>
         </group>
       </group>
     </group>

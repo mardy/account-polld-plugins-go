@@ -5,7 +5,7 @@
   <translations>account-polld</translations>
 
   <services>
-    <service id="google-gmail">
+    <service id="google-gmail-poll">
       <description>Get notifications for your email</description>
     </service>
     <service id="facebook-microblog">
