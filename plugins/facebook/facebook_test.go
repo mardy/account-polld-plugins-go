@@ -21,7 +21,19 @@ import (
 	"io"
 	"net/http"
 	"testing"
+
+	. "launchpad.net/gocheck"
 )
+
+type S struct{}
+
+func init() {
+	Suite(S{})
+}
+
+func TestAll(t *testing.T) {
+	TestingT(t)
+}
 
 // closeWraper adds a dummy Close() method to a reader
 type closeWrapper struct {
@@ -102,66 +114,44 @@ const (
 `
 )
 
-func TestParseNotifications(t *testing.T) {
+func (s S) TestParseNotifications(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{}
 	notifications, err := p.parseResponse(resp)
-	if err != nil {
-		t.Fatal("Unexpected error:", err)
-	}
-	if len(notifications) != 2 {
-		t.Fatal("Expected 2 notifications, got ", len(notifications))
-	}
-	if notifications[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
-		t.Error("Bad summary for first notification:", notifications[0].Card.Summary)
-	}
-	if notifications[1].Card.Summary != "Sender2's birthday was on July 7." {
-		t.Error("Bad summary for second notification:", notifications[0].Card.Summary)
-	}
-	if p.lastUpdate != "2014-07-12T09:51:57+0000" {
-		t.Error("Unexpected last update time:", p.lastUpdate)
-	}
+	c.Assert(err, IsNil)
+	c.Assert(len(notifications), Equals, 2)
+	c.Check(notifications[0].Card.Summary, Equals, "Sender posted on your timeline: \"The message...\"")
+	c.Check(notifications[1].Card.Summary, Equals, "Sender2's birthday was on July 7.")
+	c.Check(p.lastUpdate, Equals, "2014-07-12T09:51:57+0000")
 }
 
-func TestIgnoreOldNotifications(t *testing.T) {
+func (s S) TestIgnoreOldNotifications(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{lastUpdate: "2014-07-08T06:17:52+0000"}
 	notifications, err := p.parseResponse(resp)
-	if err != nil {
-		t.Fatal("Unexpected error:", err)
-	}
-	if len(notifications) != 1 {
-		t.Fatal("Expected 1 notification, got ", len(notifications))
-	}
-	if notifications[0].Card.Summary != "Sender posted on your timeline: \"The message...\"" {
-		t.Error("Bad summary for first notification:", notifications[0].Card.Summary)
-	}
-	if p.lastUpdate != "2014-07-12T09:51:57+0000" {
-		t.Error("Unexpected last update time:", p.lastUpdate)
-	}
+	c.Assert(err, IsNil)
+	c.Assert(len(notifications), Equals, 1)
+	c.Check(notifications[0].Card.Summary, Equals, "Sender posted on your timeline: \"The message...\"")
+	c.Check(p.lastUpdate, Equals, "2014-07-12T09:51:57+0000")
 }
 
-func TestErrorResponse(t *testing.T) {
+func (s S) TestErrorResponse(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusBadRequest,
 		Body:       closeWrapper{bytes.NewReader([]byte(errorBody))},
 	}
 	p := &fbPlugin{}
 	notifications, err := p.parseResponse(resp)
-	if err == nil {
-		t.Fatal("Expected parseResponse to return an error.")
-	}
-	if notifications != nil {
-		t.Error("Expected notifications to be nil on error.")
-	}
+	c.Check(notifications, IsNil)
+	c.Assert(err, Not(IsNil))
 	graphErr := err.(*GraphError)
-	if graphErr.Message != "Message describing the error" {
-		t.Errorf("Unexpected error message: '%s'", graphErr.Message)
-	}
+	c.Check(graphErr.Message, Equals, "Message describing the error")
+	c.Check(graphErr.Code, Equals, 190)
+	c.Check(graphErr.Subcode, Equals, 460)
 }
