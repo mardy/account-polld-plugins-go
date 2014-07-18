@@ -109,6 +109,8 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 						// TODO this is a placeholder, Actions aren't fully defined yet and opening
 						// multiple inboxes has issues.
 						Actions: []string{"Open", "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
+						Popup:   true,
+						Persist: true,
 					},
 				},
 			}
