@@ -18,8 +18,8 @@
 package twitter
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,7 +32,7 @@ import (
 var baseUrl, _ = url.Parse("https://api.twitter.com/1.1/")
 
 type twitterPlugin struct {
-	lastMentionId int64
+	lastMentionId       int64
 	lastDirectMessageId int64
 }
 
@@ -45,7 +45,7 @@ func (p *twitterPlugin) ApplicationId() plugins.ApplicationId {
 }
 
 func (p *twitterPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
-	// Resolve path relative to Graph API base URL, and add access token
+	// Resolve path relative to API base URL.
 	u, err := baseUrl.Parse(path)
 	if err != nil {
 		return nil, err
@@ -55,12 +55,12 @@ func (p *twitterPlugin) request(authData *accounts.AuthData, path string) (*http
 
 	client := oauth.Client{
 		Credentials: oauth.Credentials{
-			Token: authData.ClientId,
+			Token:  authData.ClientId,
 			Secret: authData.ClientSecret,
 		},
 	}
 	token := &oauth.Credentials{
-		Token: authData.AccessToken,
+		Token:  authData.AccessToken,
 		Secret: authData.TokenSecret,
 	}
 	return client.Get(http.DefaultClient, token, u.String(), query)
@@ -89,7 +89,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Mention from @%s", s.User.ScreenName),
-					Body: s.Text,
+					Body:    s.Text,
 				},
 			},
 		})
@@ -124,7 +124,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Direct message from @%s", m.Sender.ScreenName),
-					Body: m.Text,
+					Body:    m.Text,
 				},
 			},
 		})
@@ -169,28 +169,27 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 // Status format is described here:
 // https://dev.twitter.com/docs/api/1.1/get/statuses/mentions_timeline
 type status struct {
-	Id int64 `json:"id"`
+	Id        int64  `json:"id"`
 	CreatedAt string `json:"created_at"`
-	User user `json:"user"`
-	Text string `json:"text"`
+	User      user   `json:"user"`
+	Text      string `json:"text"`
 }
 
 // Direct message format is described here:
 // https://dev.twitter.com/docs/api/1.1/get/direct_messages
 type directMessage struct {
-	Id int64 `json:"id"`
+	Id        int64  `json:"id"`
 	CreatedAt string `json:"created_at"`
-	Sender user `json:"sender"`
-	Recipient user `json:"recipient"`
-	Text string `json:"text"`
+	Sender    user   `json:"sender"`
+	Recipient user   `json:"recipient"`
+	Text      string `json:"text"`
 }
 
-	type user struct {
-		Id int64 `json:"id"`
+type user struct {
+	Id         int64  `json:"id"`
 	ScreenName string `json:"screen_name"`
-	Name string `json:"name"`
-	Image string `json:"profile_image_url"`
-
+	Name       string `json:"name"`
+	Image      string `json:"profile_image_url"`
 }
 
 // The error response format is described here:
@@ -204,7 +203,7 @@ type TwitterError struct {
 
 func (err *TwitterError) Error() string {
 	messages := make([]string, len(err.Errors))
-	for i := range(err.Errors) {
+	for i := range err.Errors {
 		messages[i] = err.Errors[i].Message
 	}
 	return strings.Join(messages, "\n")
