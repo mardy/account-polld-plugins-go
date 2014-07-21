@@ -37,12 +37,7 @@ type GmailPlugin struct {
 	// approach is taken against timestamps as it avoids needing to call
 	// get on the message.
 	//
-	// The potential missed notification is when the user manually marks a
-	// message as unread that is already in this list (which could be
-	// considered a good thing).
-	//
 	// TODO determine if persisting the list to avoid renotification on reboot.
-	// TODO clean the list with messages that are read.
 	reportedIds []string
 }
 
@@ -64,10 +59,6 @@ func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, 
 		return nil, err
 	}
 	for i := range messages {
-		// Don't download message payload for previously reported messages
-		if p.reported(messages[i].Id) {
-			continue
-		}
 		resp, err := p.requestMessage(messages[i].Id, authData.AccessToken)
 		if err != nil {
 			return nil, err
@@ -92,11 +83,6 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 	pushMsgMap := make(pushes)
 
 	for _, msg := range messages {
-		// Don't report previously reported messages
-		if p.reported(msg.Id) {
-			continue
-		}
-		p.reportedIds = append(p.reportedIds, msg.Id)
 		hdr := msg.Payload.mapHeaders()
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdr_FROM])
@@ -108,7 +94,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 						Body:    msg.Snippet,
 						// TODO this is a placeholder, Actions aren't fully defined yet and opening
 						// multiple inboxes has issues.
-						Actions: []string{"Open", "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
+						Actions: []string{"https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
 						Popup:   true,
 						Persist: true,
 					},
@@ -140,7 +126,27 @@ func (p *GmailPlugin) parseMessageListResponse(resp *http.Response) ([]message, 
 		return nil, err
 	}
 
-	return messages.Messages, nil
+	filteredMsg := p.messageListFilter(messages.Messages)
+
+	return filteredMsg, nil
+}
+
+// messageListFilter returns a subset of unread messages where the subset
+// depends on not being in reportedIds. Before returning, reportedIds is
+// updated with the new list of unread messages.
+func (p *GmailPlugin) messageListFilter(messages []message) []message {
+	sort.Sort(byId(messages))
+	var reportMsg []message
+	var ids []string
+
+	for _, msg := range messages {
+		if !p.reported(msg.Id) {
+			reportMsg = append(reportMsg, msg)
+		}
+		ids = append(ids, msg.Id)
+	}
+	p.reportedIds = ids
+	return reportMsg
 }
 
 func (p *GmailPlugin) parseMessageResponse(resp *http.Response) (message, error) {

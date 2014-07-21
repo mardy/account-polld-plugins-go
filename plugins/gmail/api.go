@@ -51,6 +51,18 @@ type message struct {
 	Payload payload `json:"payload"`
 }
 
+func (m message) String() string {
+	return fmt.Sprintf("Id: %d, snippet: '%s'\n", m.Id, m.Snippet[:10])
+}
+
+// ById implements sort.Interface for []message based on
+// the Id field.
+type byId []message
+
+func (m byId) Len() int           { return len(m) }
+func (m byId) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
+func (m byId) Less(i, j int) bool { return m[i].Id < m[j].Id }
+
 // payload represents the message payload.
 type payload struct {
 	Headers []messageHeader `json:"headers"`
