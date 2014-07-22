@@ -21,8 +21,7 @@ package accounts
 #cgo pkg-config: glib-2.0 libaccounts-glib libsignon-glib
 #include <stdlib.h>
 #include <glib.h>
-
-typedef struct _AccountWatcher AccountWatcher;
+#include "account-watcher.h"
 
 AccountWatcher *watch_for_services(void *array_of_service_names, int length);
 */
