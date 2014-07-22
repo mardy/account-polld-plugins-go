@@ -70,7 +70,7 @@ func main() {
 func monitorAccounts(postWatch chan *PostWatch) {
 	mgr := make(map[uint]*AccountManager)
 L:
-	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
+	for data := range accounts.NewWatcher(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER).C {
 		if account, ok := mgr[data.AccountId]; ok {
 			if data.Enabled {
 				log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)

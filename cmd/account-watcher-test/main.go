@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Expects a list of service names as command line arguments
-	for data := range accounts.WatchForService(os.Args[1:]...) {
+	for data := range accounts.NewWatcher(os.Args[1:]...).C {
 		fmt.Printf("%#v\n", data)
 	}
 }

@@ -26,7 +26,15 @@ package accounts
 AccountWatcher *watch_for_services(void *array_of_service_names, int length);
 */
 import "C"
-import "unsafe"
+import (
+	"sync"
+	"unsafe"
+)
+
+type Watcher struct {
+	C <-chan AuthData
+	w *C.AccountWatcher
+}
 
 type AuthData struct {
 	AccountId   uint
@@ -40,28 +48,41 @@ type AuthData struct {
 }
 
 var (
-	mainLoop     *C.GMainLoop
+	mainLoopOnce sync.Once
 	authChannels = make(map[*C.AccountWatcher]chan<- AuthData)
+	authChannelsLock sync.Mutex
 )
 
-func WatchForService(serviceNames... string) <-chan AuthData {
-	if mainLoop == nil {
-		mainLoop = C.g_main_loop_new(nil, C.gboolean(1))
+func startMainLoop() {
+	mainLoopOnce.Do(func() {
+		mainLoop := C.g_main_loop_new(nil, C.gboolean(1))
 		go C.g_main_loop_run(mainLoop)
-	}
+	})
+}
 
-	watcher := C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
+// NewWatcher creates a new account watcher for the given service names
+func NewWatcher(serviceNames... string) *Watcher {
+	watcher := new(Watcher)
+	watcher.w = C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
 
 	ch := make(chan AuthData)
-	authChannels[watcher] = ch
-	return ch
+	watcher.C = ch
+	authChannelsLock.Lock()
+	authChannels[watcher.w] = ch
+	authChannelsLock.Unlock()
+
+	startMainLoop()
+
+	return watcher
 }
 
 //export authCallback
 func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
 	// Ideally the first argument would be of type
 	// *C.AccountWatcher, but that fails with Go 1.2.
+	authChannelsLock.Lock()
 	ch := authChannels[(*C.AccountWatcher)(watcher)]
+	authChannelsLock.Unlock()
 	if ch == nil {
 		// Log the error
 		return
