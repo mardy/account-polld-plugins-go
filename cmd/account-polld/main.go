@@ -68,9 +68,10 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch) {
+	watcher := accounts.NewWatcher(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER)
 	mgr := make(map[uint]*AccountManager)
 L:
-	for data := range accounts.NewWatcher(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER).C {
+	for data := range watcher.C {
 		if account, ok := mgr[data.AccountId]; ok {
 			if data.Enabled {
 				log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
@@ -97,7 +98,8 @@ L:
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				continue L
 			}
-			mgr[data.AccountId] = NewAccountManager(data, postWatch, plugin)
+			mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
+			mgr[data.AccountId].updateAuthData(data)
 			go mgr[data.AccountId].Loop()
 		}
 	}
