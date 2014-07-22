@@ -32,8 +32,8 @@ import (
 )
 
 type Watcher struct {
-	C <-chan AuthData
-	w *C.AccountWatcher
+	C       <-chan AuthData
+	watcher *C.AccountWatcher
 }
 
 type AuthData struct {
@@ -62,18 +62,24 @@ func startMainLoop() {
 
 // NewWatcher creates a new account watcher for the given service names
 func NewWatcher(serviceNames... string) *Watcher {
-	watcher := new(Watcher)
-	watcher.w = C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
+	w := new(Watcher)
+	w.watcher = C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
 
 	ch := make(chan AuthData)
-	watcher.C = ch
+	w.C = ch
 	authChannelsLock.Lock()
-	authChannels[watcher.w] = ch
+	authChannels[w.watcher] = ch
 	authChannelsLock.Unlock()
 
 	startMainLoop()
 
-	return watcher
+	return w
+}
+
+// Refresh requests that the token for the given account be refreshed.
+// The new access token will be delivered over the watcher's channel.
+func (w *Watcher) Refresh(accountId uint) {
+	C.account_watcher_refresh(w.watcher, C.uint(accountId))
 }
 
 //export authCallback
