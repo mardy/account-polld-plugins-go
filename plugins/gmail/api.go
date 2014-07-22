@@ -44,6 +44,9 @@ type message struct {
 	Id string `json:"id"`
 	// ThreadId is the ID of the thread the message belongs to.
 	ThreadId string `json:"threadId"`
+	// HistoryId is the ID of the last history record that modified
+	// this message.
+	HistoryId string `json:"historyId"`
 	// Snippet is a short part of the message text. This text is
 	// used for the push message summary.
 	Snippet string `json:"snippet"`
@@ -95,11 +98,11 @@ type errorResp struct {
 }
 
 func (err *errorResp) Error() string {
-	return fmt.Sprintln("backend response:", err.Err.Message)
+	return fmt.Sprint("backend response:", err.Err.Message)
 }
 
 const (
-	hdr_DATE    = "Date"
-	hdr_SUBJECT = "Subject"
-	hdr_FROM    = "From"
+	hdrDATE    = "Date"
+	hdrSUBJECT = "Subject"
+	hdrFROM    = "From"
 )

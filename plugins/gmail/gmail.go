@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 
 	"launchpad.net/account-polld/accounts"
@@ -38,7 +39,7 @@ type GmailPlugin struct {
 	// get on the message.
 	//
 	// TODO determine if persisting the list to avoid renotification on reboot.
-	reportedIds []string
+	reportedIds map[string]bool
 }
 
 func New() *GmailPlugin {
@@ -50,6 +51,11 @@ func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
 }
 
 func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+	// This envvar check is to ease testing.
+	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GMAIL"); token != "" {
+		authData.AccessToken = token
+	}
+
 	resp, err := p.requestMessageList(authData.AccessToken)
 	if err != nil {
 		return nil, err
@@ -58,6 +64,8 @@ func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, 
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO use the batching API defined in https://developers.google.com/gmail/api/guides/batch
 	for i := range messages {
 		resp, err := p.requestMessage(messages[i].Id, authData.AccessToken)
 		if err != nil {
@@ -72,11 +80,7 @@ func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, 
 }
 
 func (p *GmailPlugin) reported(id string) bool {
-	sort.Strings(p.reportedIds)
-	if i := sort.SearchStrings(p.reportedIds, id); i < len(p.reportedIds) {
-		return p.reportedIds[i] == id
-	}
-	return false
+	return p.reportedIds[id]
 }
 
 func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMessage, error) {
@@ -85,12 +89,12 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 	for _, msg := range messages {
 		hdr := msg.Payload.mapHeaders()
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
-			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdr_FROM])
+			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdrFROM])
 		} else {
 			pushMsgMap[msg.ThreadId] = plugins.PushMessage{
 				Notification: plugins.Notification{
 					Card: &plugins.Card{
-						Summary: fmt.Sprintf("Message \"%s\" from %s", hdr[hdr_SUBJECT], hdr[hdr_FROM]),
+						Summary: fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], hdr[hdrFROM]),
 						Body:    msg.Snippet,
 						// TODO this is a placeholder, Actions aren't fully defined yet and opening
 						// multiple inboxes has issues.
@@ -137,13 +141,13 @@ func (p *GmailPlugin) parseMessageListResponse(resp *http.Response) ([]message, 
 func (p *GmailPlugin) messageListFilter(messages []message) []message {
 	sort.Sort(byId(messages))
 	var reportMsg []message
-	var ids []string
+	var ids = make(map[string]bool)
 
 	for _, msg := range messages {
 		if !p.reported(msg.Id) {
 			reportMsg = append(reportMsg, msg)
 		}
-		ids = append(ids, msg.Id)
+		ids[msg.Id] = true
 	}
 	p.reportedIds = ids
 	return reportMsg
@@ -188,8 +192,7 @@ func (p *GmailPlugin) requestMessage(id, accessToken string) (*http.Response, er
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{}
-	return client.Do(req)
+	return http.DefaultClient.Do(req)
 }
 
 func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, error) {
@@ -200,12 +203,10 @@ func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, er
 
 	query := u.Query()
 
-	// only get unread
-	query.Add("q", "is:unread")
-	// from the INBOX
-	query.Add("labelIds", "INBOX")
-	// from the Personal category.
-	query.Add("labelIds", "CATEGORY_PERSONAL")
+	// only get unread, from the personal category that are in the inbox.
+	// if we want to widen the search scope we need to add more categories
+	// like: '(category:personal or category:updates or category:forums)' ...
+	query.Add("q", "is:unread category:personal in:inbox")
 	u.RawQuery = query.Encode()
 
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -214,6 +215,5 @@ func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, er
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{}
-	return client.Do(req)
+	return http.DefaultClient.Do(req)
 }
