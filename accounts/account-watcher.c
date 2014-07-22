@@ -133,23 +133,10 @@ static void account_info_login_cb(GObject *source, GAsyncResult *result, void *u
     account_info_notify(info);
 }
 
-static void account_info_enabled_cb(
-    AgAccountService *account_service, gboolean enabled, AccountInfo *info) {
-    fprintf(stderr, "account_info_enabled_cb for %u, enabled=%d\n", info->account_id, enabled);
-    if (info->enabled == enabled) {
-        /* no change */
-        return;
-    }
-    info->enabled = enabled;
-
+static void account_info_login(AccountInfo *info) {
     account_info_clear_login(info);
-    if (!enabled) {
-        // Send notification that account has been disabled */
-        account_info_notify(info);
-        return;
-    }
 
-    AgAuthData *auth_data = ag_account_service_get_auth_data(account_service);
+    AgAuthData *auth_data = ag_account_service_get_auth_data(info->account_service);
     GError *error = NULL;
     fprintf(stderr, "Starting authentication session for account %u\n", info->account_id);
     info->session = signon_auth_session_new(
@@ -180,6 +167,24 @@ static void account_info_enabled_cb(
         NULL, /* cancellable */
         account_info_login_cb, info);
     ag_auth_data_unref(auth_data);
+}
+
+static void account_info_enabled_cb(
+    AgAccountService *account_service, gboolean enabled, AccountInfo *info) {
+    fprintf(stderr, "account_info_enabled_cb for %u, enabled=%d\n", info->account_id, enabled);
+    if (info->enabled == enabled) {
+        /* no change */
+        return;
+    }
+    info->enabled = enabled;
+
+    if (enabled) {
+        account_info_login(info);
+    } else {
+        account_info_clear_login(info);
+        // Send notification that account has been disabled */
+        account_info_notify(info);
+    }
 }
 
 static AccountInfo *account_info_new(AccountWatcher *watcher, AgAccountService *account_service) {
@@ -258,7 +263,7 @@ static gboolean account_watcher_setup(void *user_data) {
     }
     ag_manager_list_free(enabled_accounts);
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 AccountWatcher *account_watcher_new(GHashTable *services_to_watch,
@@ -276,4 +281,29 @@ AccountWatcher *account_watcher_new(GHashTable *services_to_watch,
     /* Make sure main setup occurs within the mainloop thread */
     g_idle_add(account_watcher_setup, watcher);
     return watcher;
+}
+
+struct refresh_info {
+    AccountWatcher *watcher;
+    AgAccountId account_id;
+};
+
+static gboolean account_watcher_refresh_cb(void *user_data) {
+    struct refresh_info *data = (struct refresh_info *)user_data;
+
+    AccountInfo *info = g_hash_table_lookup(
+        data->watcher->services, GUINT_TO_POINTER(data->account_id));
+    if (info != NULL) {
+        account_info_login(info);
+    }
+
+    return G_SOURCE_REMOVE;
+}
+
+void account_watcher_refresh(AccountWatcher *watcher, unsigned int account_id) {
+    struct refresh_info *data = g_new(struct refresh_info, 1);
+    data->watcher = watcher;
+    data->account_id = account_id;
+    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, account_watcher_refresh_cb,
+                    data, g_free);
 }

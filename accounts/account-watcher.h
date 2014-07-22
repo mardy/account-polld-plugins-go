@@ -35,4 +35,6 @@ AccountWatcher *account_watcher_new(GHashTable *services_to_watch,
                                     AccountEnabledCallback callback,
                                     void *user_data);
 
+void account_watcher_refresh(AccountWatcher *watcher, unsigned int account_id);
+
 #endif
