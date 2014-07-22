@@ -29,7 +29,11 @@ import (
 	"launchpad.net/account-polld/plugins"
 )
 
-const APP_ID = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+const (
+	APP_ID = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+	// TODO either use the helper, embed the icon or libclick, this app is preinstalled so the path is safe.
+	gmailIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-gmail/gmail.png"
+)
 
 var baseUrl, _ = url.Parse("https://www.googleapis.com/gmail/v1/users/me/")
 
@@ -99,6 +103,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 						// TODO this is a placeholder, Actions aren't fully defined yet and opening
 						// multiple inboxes has issues.
 						Actions: []string{"https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
+						Icon:    gmailIcon,
 						Popup:   true,
 						Persist: true,
 					},
