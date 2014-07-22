@@ -17,7 +17,11 @@
 
 package plugins
 
-import "launchpad.net/account-polld/accounts"
+import (
+	"errors"
+
+	"launchpad.net/account-polld/accounts"
+)
 
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
@@ -122,3 +126,7 @@ const (
 	PLUGIN_EMAIL = 0
 	PLUGIN_SOCIAL
 )
+
+// ErrTokenExpired is the error returned by a plugin to indicate that
+// the web service reported that the authentication token has expired.
+var ErrTokenExpired = errors.New("Token expired")
