@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/garyburd/go-oauth/oauth"
+	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 )
