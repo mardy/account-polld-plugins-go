@@ -28,6 +28,7 @@ import (
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/facebook"
 	"launchpad.net/account-polld/plugins/gmail"
+	"launchpad.net/account-polld/plugins/twitter"
 	"launchpad.net/go-dbus/v1"
 )
 
@@ -92,8 +93,8 @@ L:
 				plugin = facebook.New()
 			case SERVICENAME_TWITTER:
 				// This is just stubbed until the plugin exists.
-				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
-				continue L
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = twitter.New()
 			default:
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				continue L
