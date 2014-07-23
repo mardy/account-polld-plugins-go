@@ -77,6 +77,11 @@ func (a *AccountManager) poll() {
 		return
 	}
 
+	if a.authData.Error != nil {
+		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
+		return
+	}
+
 	if n, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 		// penalizing the next poll
