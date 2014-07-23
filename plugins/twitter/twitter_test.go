@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	. "launchpad.net/gocheck"
+
+	"launchpad.net/account-polld/plugins"
 )
 
 type S struct{}
@@ -51,6 +53,15 @@ const (
     {
       "message":"Sorry, that page does not exist",
       "code":34
+    }
+  ]
+}`
+	tokenExpiredErrorBody = `
+{
+  "errors": [
+    {
+      "message":"Invalid or expired token",
+      "code":89
     }
   ]
 }`
@@ -425,6 +436,17 @@ func (s S) TestParseStatusesError(c *C) {
 	c.Check(twErr.Errors[0].Code, Equals, 34)
 }
 
+func (s S) TestParseStatusesTokenExpiredError(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       closeWrapper{bytes.NewReader([]byte(tokenExpiredErrorBody))},
+	}
+	p := &twitterPlugin{}
+	messages, err := p.parseStatuses(resp)
+	c.Check(messages, IsNil)
+	c.Assert(err, Equals, plugins.ErrTokenExpired)
+}
+
 func (s S) TestParseDirectMessages(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -452,4 +474,15 @@ func (s S) TestParseDirectMessagesError(c *C) {
 	c.Assert(len(twErr.Errors), Equals, 1)
 	c.Check(twErr.Errors[0].Message, Equals, "Sorry, that page does not exist")
 	c.Check(twErr.Errors[0].Code, Equals, 34)
+}
+
+func (s S) TestParseDirectMessagesTokenExpiredError(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       closeWrapper{bytes.NewReader([]byte(tokenExpiredErrorBody))},
+	}
+	p := &twitterPlugin{}
+	messages, err := p.parseDirectMessages(resp)
+	c.Check(messages, IsNil)
+	c.Assert(err, Equals, plugins.ErrTokenExpired)
 }

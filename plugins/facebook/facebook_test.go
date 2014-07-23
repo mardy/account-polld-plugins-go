@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	. "launchpad.net/gocheck"
+
+	"launchpad.net/account-polld/plugins"
 )
 
 type S struct{}
@@ -50,7 +52,7 @@ const (
   "error": {
     "message": "Unknown path components: /xyz",
     "type": "OAuthException",
-    "code": 2500,
+    "code": 2500
   }
 }`
 	tokenExpiredErrorBody = `
