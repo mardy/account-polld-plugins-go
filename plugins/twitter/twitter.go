@@ -31,6 +31,8 @@ import (
 
 var baseUrl, _ = url.Parse("https://api.twitter.com/1.1/")
 
+const twitterIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-twitter/twitter.png"
+
 type twitterPlugin struct {
 	lastMentionId       int64
 	lastDirectMessageId int64
@@ -90,6 +92,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Mention from @%s", s.User.ScreenName),
 					Body:    s.Text,
+					Icon:    twitterIcon,
 				},
 			},
 		})
@@ -125,6 +128,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Direct message from @%s", m.Sender.ScreenName),
 					Body:    m.Text,
+					Icon:    twitterIcon,
 				},
 			},
 		})
