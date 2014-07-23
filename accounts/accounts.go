@@ -27,6 +27,7 @@ AccountWatcher *watch_for_services(void *array_of_service_names, int length);
 */
 import "C"
 import (
+	"errors"
 	"sync"
 	"unsafe"
 )
@@ -39,6 +40,7 @@ type Watcher struct {
 type AuthData struct {
 	AccountId   uint
 	ServiceName string
+	Error       error
 	Enabled     bool
 
 	ClientId     string
@@ -83,7 +85,7 @@ func (w *Watcher) Refresh(accountId uint) {
 }
 
 //export authCallback
-func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
+func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
 	// Ideally the first argument would be of type
 	// *C.AccountWatcher, but that fails with Go 1.2.
 	authChannelsLock.Lock()
@@ -97,6 +99,9 @@ func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char,
 	var data AuthData
 	data.AccountId = uint(accountId)
 	data.ServiceName = C.GoString(serviceName)
+	if error != nil {
+		data.Error = errors.New(C.GoString((*C.char)(error.message)))
+	}
 	if enabled != 0 {
 		data.Enabled = true
 	}

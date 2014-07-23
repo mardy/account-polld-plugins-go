@@ -82,7 +82,7 @@ static void account_info_free(AccountInfo *info) {
     g_free(info);
 }
 
-static void account_info_notify(AccountInfo *info) {
+static void account_info_notify(AccountInfo *info, GError *error) {
     AgService *service = ag_account_service_get_service(info->account_service);
     const char *service_name = ag_service_get_name(service);
     char *client_id = NULL;
@@ -108,6 +108,7 @@ static void account_info_notify(AccountInfo *info) {
     info->watcher->callback(info->watcher,
                             info->account_id,
                             service_name,
+                            error,
                             info->enabled,
                             client_id,
                             client_secret,
@@ -124,13 +125,12 @@ static void account_info_login_cb(GObject *source, GAsyncResult *result, void *u
 
     GError *error = NULL;
     info->session_data = signon_auth_session_process_finish(session, result, &error);
+    account_info_notify(info, error);
 
     if (error != NULL) {
         fprintf(stderr, "Authentication failed: %s\n", error->message);
         g_error_free(error);
-        return;
     }
-    account_info_notify(info);
 }
 
 static void account_info_login(AccountInfo *info) {
@@ -144,6 +144,7 @@ static void account_info_login(AccountInfo *info) {
         ag_auth_data_get_method(auth_data), &error);
     if (error != NULL) {
         fprintf(stderr, "Could not set up auth session: %s\n", error->message);
+        account_info_notify(info, error);
         g_error_free(error);
         g_object_unref(auth_data);
         return;
@@ -176,7 +177,7 @@ static void account_info_enabled_cb(
     } else {
         account_info_clear_login(info);
         // Send notification that account has been disabled */
-        account_info_notify(info);
+        account_info_notify(info, NULL);
     }
 }
 

@@ -19,7 +19,8 @@ AccountWatcher *watch_for_services(void *array_of_service_names, int length) {
          * prototype we expect.
          */
         void (*unused)(void *watcher,
-                       unsigned int account_id, char *service_name, int enabled,
+                       unsigned int account_id, char *service_name,
+                       GError *error, int enabled,
                        char *client_id, char *client_secret,
                        char *access_token, char *token_secret,
                        void *user_data) = authCallback;
