@@ -62,6 +62,9 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 		if err := decoder.Decode(&result); err != nil {
 			return nil, err
 		}
+		if result.Error.Code == 190 {
+			return nil, plugins.ErrTokenExpired
+		}
 		return nil, &result.Error
 	}
 

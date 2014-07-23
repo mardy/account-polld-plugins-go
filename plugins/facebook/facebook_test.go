@@ -48,10 +48,18 @@ const (
 	errorBody = `
 {
   "error": {
-    "message": "Message describing the error",
+    "message": "Unknown path components: /xyz",
+    "type": "OAuthException",
+    "code": 2500,
+  }
+}`
+	tokenExpiredErrorBody = `
+{
+  "error": {
+    "message": "Error validating access token: Session has expired",
     "type": "OAuthException",
     "code": 190 ,
-    "error_subcode": 460
+    "error_subcode": 463
   }
 }`
 	notificationsBody = `
@@ -151,7 +159,17 @@ func (s S) TestErrorResponse(c *C) {
 	c.Check(notifications, IsNil)
 	c.Assert(err, Not(IsNil))
 	graphErr := err.(*GraphError)
-	c.Check(graphErr.Message, Equals, "Message describing the error")
-	c.Check(graphErr.Code, Equals, 190)
-	c.Check(graphErr.Subcode, Equals, 460)
+	c.Check(graphErr.Message, Equals, "Unknown path components: /xyz")
+	c.Check(graphErr.Code, Equals, 2500)
+}
+
+func (s S) TestTokenExpiredErrorResponse(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       closeWrapper{bytes.NewReader([]byte(tokenExpiredErrorBody))},
+	}
+	p := &fbPlugin{}
+	notifications, err := p.parseResponse(resp)
+	c.Check(notifications, IsNil)
+	c.Assert(err, Equals, plugins.ErrTokenExpired)
 }
