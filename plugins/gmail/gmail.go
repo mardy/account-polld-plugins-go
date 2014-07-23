@@ -186,7 +186,7 @@ func (p *GmailPlugin) requestMessage(id, accessToken string) (*http.Response, er
 
 	query := u.Query()
 	// only request specific fields
-	query.Add("fields", "snippet,threadId,id,payload")
+	query.Add("fields", "snippet,threadId,id,payload/headers")
 	// get the full message to get From and Subject from headers
 	query.Add("format", "full")
 	u.RawQuery = query.Encode()
