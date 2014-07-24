@@ -22,6 +22,13 @@
 
 #include "account-watcher.h"
 
+/* #define DEBUG */
+#ifdef DEBUG
+#  define trace(...) fprintf(stderr, __VA_ARGS__)
+#else
+#  define trace(...)
+#endif
+
 struct _AccountWatcher {
     AgManager *manager;
     /* A hash table of the enabled accounts we know of.
@@ -120,14 +127,14 @@ static void account_info_login_cb(GObject *source, GAsyncResult *result, void *u
     SignonAuthSession *session = (SignonAuthSession *)source;
     AccountInfo *info = (AccountInfo *)user_data;
 
-    fprintf(stderr, "Authentication for account %u complete\n", info->account_id);
+    trace("Authentication for account %u complete\n", info->account_id);
 
     GError *error = NULL;
     info->session_data = signon_auth_session_process_finish(session, result, &error);
     account_info_notify(info, error);
 
     if (error != NULL) {
-        fprintf(stderr, "Authentication failed: %s\n", error->message);
+        trace("Authentication failed: %s\n", error->message);
         g_error_free(error);
     }
 }
@@ -137,12 +144,12 @@ static void account_info_login(AccountInfo *info) {
 
     AgAuthData *auth_data = ag_account_service_get_auth_data(info->account_service);
     GError *error = NULL;
-    fprintf(stderr, "Starting authentication session for account %u\n", info->account_id);
+    trace("Starting authentication session for account %u\n", info->account_id);
     info->session = signon_auth_session_new(
         ag_auth_data_get_credentials_id(auth_data),
         ag_auth_data_get_method(auth_data), &error);
     if (error != NULL) {
-        fprintf(stderr, "Could not set up auth session: %s\n", error->message);
+        trace("Could not set up auth session: %s\n", error->message);
         account_info_notify(info, error);
         g_error_free(error);
         g_object_unref(auth_data);
@@ -164,7 +171,7 @@ static void account_info_login(AccountInfo *info) {
 
 static void account_info_enabled_cb(
     AgAccountService *account_service, gboolean enabled, AccountInfo *info) {
-    fprintf(stderr, "account_info_enabled_cb for %u, enabled=%d\n", info->account_id, enabled);
+    trace("account_info_enabled_cb for %u, enabled=%d\n", info->account_id, enabled);
     if (info->enabled == enabled) {
         /* no change */
         return;
@@ -199,7 +206,7 @@ static AccountInfo *account_info_new(AccountWatcher *watcher, AgAccountService *
 
 static void account_watcher_enabled_event_cb(
     AgManager *manager, AgAccountId account_id, AccountWatcher *watcher) {
-    fprintf(stderr, "enabled-event for %u\n", account_id);
+    trace("enabled-event for %u\n", account_id);
     if (g_hash_table_contains(watcher->services, GUINT_TO_POINTER(account_id))) {
         /* We are already tracking this account */
         return;
@@ -226,7 +233,7 @@ static void account_watcher_enabled_event_cb(
 
 static void account_watcher_account_deleted_cb(
     AgManager *manager, AgAccountId account_id, AccountWatcher *watcher) {
-    fprintf(stderr, "account-deleted for %u\n", account_id);
+    trace("account-deleted for %u\n", account_id);
     /* A disabled event should have been sent prior to this, so no
      * need to send any notification. */
     g_hash_table_remove(watcher->services, GUINT_TO_POINTER(account_id));
