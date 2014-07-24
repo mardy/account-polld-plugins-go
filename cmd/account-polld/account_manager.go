@@ -19,6 +19,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -36,7 +38,18 @@ type AccountManager struct {
 	terminate chan bool
 }
 
-const DEFAULT_INTERVAL = time.Duration(60 * time.Second)
+var (
+	pollInterval = time.Duration(5 * time.Minute)
+	maxInterval  = time.Duration(20 * time.Minute)
+)
+
+func init() {
+	if intervalEnv := os.Getenv("ACCOUNT_POLLD_POLL_INTERVAL_MINUTES"); intervalEnv != "" {
+		if interval, err := strconv.ParseInt(intervalEnv, 0, 0); err == nil {
+			pollInterval = time.Duration(interval) * time.Minute
+		}
+	}
+}
 
 func NewAccountManager(authData accounts.AuthData, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
@@ -44,7 +57,7 @@ func NewAccountManager(authData accounts.AuthData, postWatch chan *PostWatch, pl
 		authData:  authData,
 		authMutex: &sync.Mutex{},
 		postWatch: postWatch,
-		interval:  DEFAULT_INTERVAL,
+		interval:  pollInterval,
 		terminate: make(chan bool),
 	}
 }
@@ -87,10 +100,12 @@ func (a *AccountManager) poll() {
 	if n, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 		// penalizing the next poll
-		a.interval += DEFAULT_INTERVAL
+		if a.interval.Minutes() < maxInterval.Minutes() {
+			a.interval += pollInterval
+		}
 	} else if len(n) > 0 {
 		// on success we reset the timeout to the default interval
-		a.interval = DEFAULT_INTERVAL
+		a.interval = pollInterval
 		a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
 	}
 }
