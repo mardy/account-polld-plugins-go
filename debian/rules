@@ -30,11 +30,14 @@ override_dh_auto_install:
 	mkdir -p \
 		${CURDIR}/debian/account-polld/usr/share/accounts/application \
 		${CURDIR}/debian/account-polld/usr/share/accounts/services \
+		${CURDIR}/debian/account-polld/usr/share/accounts/service_typess \
 		${CURDIR}/debian/account-polld/usr/share/applications
 	cp ${CURDIR}/data/account-polld.application \
 		${CURDIR}/debian/account-polld/usr/share/accounts/application/
-	cp ${CURDIR}/data/google-gmail-poll.service \
+	cp ${CURDIR}/data/*.service \
 		${CURDIR}/debian/account-polld/usr/share/accounts/services/
+	cp ${CURDIR}/data/account-polld.service-type \
+		${CURDIR}/debian/account-polld/usr/share/accounts/service_types/
 	cp ${CURDIR}/data/account-polld.desktop \
 		${CURDIR}/debian/account-polld/usr/share/applications/
 
