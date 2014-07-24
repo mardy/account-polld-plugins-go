@@ -24,6 +24,7 @@ import (
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/ubuntu-push/click"
 )
 
 type AccountManager struct {
@@ -71,6 +72,13 @@ func (a *AccountManager) poll() {
 	a.authMutex.Lock()
 	defer a.authMutex.Unlock()
 
+	if !isClickInstalled(a.plugin.ApplicationId()) {
+		log.Println(
+			"Skipping account", a.authData.AccountId, "as target click",
+			a.plugin.ApplicationId(), "is not installed")
+		return
+	}
+
 	if !a.authData.Enabled {
 		log.Println("Account", a.authData.AccountId, "no longer enabled")
 		return
@@ -91,4 +99,20 @@ func (a *AccountManager) updateAuthData(authData accounts.AuthData) {
 	a.authMutex.Lock()
 	defer a.authMutex.Unlock()
 	a.authData = authData
+}
+
+func isClickInstalled(appId plugins.ApplicationId) bool {
+	user, err := click.User()
+	if err != nil {
+		log.Println("User instance for click cannot be created to determine if click application", appId, "was installed")
+		return false
+	}
+
+	app, err := click.ParseAppId(string(appId))
+	if err != nil {
+		log.Println("Could not parse APP_ID for", appId)
+		return false
+	}
+
+	return user.Installed(app, false)
 }
