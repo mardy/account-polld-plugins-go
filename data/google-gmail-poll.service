@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <service id="google-gmail-poll">
-  <type>mail</type>
+  <type>account-polld</type>
   <name>GMail</name>
   <provider>google</provider>
   <icon>google</icon>

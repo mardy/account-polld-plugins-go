@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<service-type id="account-polld">
+  <name>Account Polling</name>
+  <description>Integrate with account-polld</description>
+  <icon>intouch</icon>
+  <translations>account-polld</translations>
+</service-type>
