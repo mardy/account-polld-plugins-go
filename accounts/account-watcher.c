@@ -24,8 +24,6 @@
 
 struct _AccountWatcher {
     AgManager *manager;
-    /* A hash table of the service names we are interested in */
-    GHashTable *services_to_watch;
     /* A hash table of the enabled accounts we know of.
      * Keys are account ID integers, and AccountInfo structs as values.
      */
@@ -210,20 +208,16 @@ static void account_watcher_enabled_event_cb(
         /* There was a problem looking up the account */
         return;
     }
+    /* Since our AgManager is restricted to a particular service type,
+     * pick the first service for the account. */
     GList *services = ag_account_list_services(account);
-    GList *l;
-    for (l = services; l != NULL; l = l->next) {
-        AgService *service = l->data;
-
-        const char *name = ag_service_get_name(service);
-        if (g_hash_table_contains(watcher->services_to_watch, name)) {
-            AgAccountService *account_service = ag_account_service_new(
-                account, service);
-            AccountInfo *info = account_info_new(watcher, account_service);
-            g_object_unref(account_service);
-            g_hash_table_insert(watcher->services, GUINT_TO_POINTER(account_id), info);
-            break;
-        }
+    if (services != NULL) {
+        AgService *service = services->data;
+        AgAccountService *account_service = ag_account_service_new(
+            account, service);
+        AccountInfo *info = account_info_new(watcher, account_service);
+        g_object_unref(account_service);
+        g_hash_table_insert(watcher->services, GUINT_TO_POINTER(account_id), info);
     }
     ag_service_list_free(services);
     g_object_unref(account);
@@ -260,13 +254,12 @@ static gboolean account_watcher_setup(void *user_data) {
     return G_SOURCE_REMOVE;
 }
 
-AccountWatcher *account_watcher_new(GHashTable *services_to_watch,
+AccountWatcher *account_watcher_new(const char *service_type,
                                     AccountEnabledCallback callback,
                                     void *user_data) {
     AccountWatcher *watcher = g_new0(AccountWatcher, 1);
 
-    watcher->manager = ag_manager_new();
-    watcher->services_to_watch = g_hash_table_ref(services_to_watch);
+    watcher->manager = ag_manager_new_for_service_type(service_type);
     watcher->services = g_hash_table_new_full(
         g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)account_info_free);
     watcher->callback = callback;

@@ -23,7 +23,7 @@ package accounts
 #include <glib.h>
 #include "account-watcher.h"
 
-AccountWatcher *watch_for_services(void *array_of_service_names, int length);
+AccountWatcher *watch_for_service_type(const char *service_type);
 */
 import "C"
 import (
@@ -63,9 +63,11 @@ func startMainLoop() {
 }
 
 // NewWatcher creates a new account watcher for the given service names
-func NewWatcher(serviceNames... string) *Watcher {
+func NewWatcher(serviceType string) *Watcher {
 	w := new(Watcher)
-	w.watcher = C.watch_for_services(unsafe.Pointer(&serviceNames[0]), C.int(len(serviceNames)))
+	cServiceType := C.CString(serviceType)
+	defer C.free(unsafe.Pointer(cServiceType))
+	w.watcher = C.watch_for_service_type(cServiceType)
 
 	ch := make(chan AuthData)
 	w.C = ch
