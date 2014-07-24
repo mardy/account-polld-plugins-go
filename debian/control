@@ -10,6 +10,7 @@ Build-Depends: debhelper (>= 9),
                golang-gocheck-dev,
                golang-ubuntu-push-dev,
                libaccounts-glib-dev,
+               libclick-0.4-dev,
                libsignon-glib-dev,
 Standards-Version: 3.9.5
 Homepage: https://launchpad.net/account-polld
