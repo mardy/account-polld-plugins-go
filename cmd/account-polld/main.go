@@ -38,9 +38,11 @@ type PostWatch struct {
 }
 
 const (
+	SERVICETYPE_POLL = "account-polld"
+
 	SERVICENAME_GMAIL    = "google-gmail-poll"
-	SERVICENAME_TWITTER  = "twitter-microblog"
-	SERVICENAME_FACEBOOK = "facebook-microblog"
+	SERVICENAME_TWITTER  = "twitter-poll"
+	SERVICENAME_FACEBOOK = "facebook-poll"
 )
 
 const (
@@ -69,7 +71,7 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch) {
-	watcher := accounts.NewWatcher(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER)
+	watcher := accounts.NewWatcher(SERVICETYPE_POLL)
 	mgr := make(map[uint]*AccountManager)
 L:
 	for data := range watcher.C {
