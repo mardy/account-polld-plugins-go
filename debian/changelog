@@ -1,5 +1,29 @@
-account-polld (0.1-0ubuntu1) UNRELEASED; urgency=low
+account-polld (0.1+14.10.20140724-0ubuntu1) utopic; urgency=low
 
+  [ Sergio Schvezov ]
   * Inital packaging.
+  * Initial plugin interface
+  * Adding unregister
+  * Interface cleanup. Removing state as it's going to be managed by the
+    daemon. Register is not needed as accounts are managed by the daemon
+    with. a new instance created per account. Added ApplicationId().
+  * Bootstrapping project layout
+  * Update and refactor the online-accounts binding to support tracking
+    multiple services and multiple instances of each service.
+  * Monitoring accounts with the accounts internal package.
+  * Adding mutex to account access.
+  * Add Facebook plugin. It currently doesn't support paginated results,
+    and requires a token with "manage_notifications" permission.
+  * Postal API updates with actual posting to the postal service.
+  * Ubuntu Online Accounts resources with specific service file for
+    gmail (pending proper client keys).
+  * Adding gmail plugin implementation.
+  * Initial packaging
 
- -- Sergio Schvezov <sergio.schvezov@canonical.com>  Tue, 22 Jul 2014 18:43:09 -0300
+  [ James Henstridge ]
+  * Add the Twitter polling plugin.
+
+  [ CI bot ]
+  * Boarding the (ci) train
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 24 Jul 2014 01:29:31 +0000
