@@ -88,19 +88,20 @@ static void account_info_notify(AccountInfo *info, GError *error) {
     char *access_token = NULL;
     char *token_secret = NULL;
 
-    if (info->enabled) {
+    if (info->auth_params != NULL) {
         /* Look up OAuth 2 parameters, falling back to OAuth 1 names */
         g_variant_lookup(info->auth_params, "ClientId", "&s", &client_id);
         g_variant_lookup(info->auth_params, "ClientSecret", "&s", &client_secret);
-        g_variant_lookup(info->session_data, "AccessToken", "&s", &access_token);
-        g_variant_lookup(info->session_data, "TokenSecret", "&s", &token_secret);
-
         if (client_id == NULL) {
             g_variant_lookup(info->auth_params, "ConsumerKey", "&s", &client_id);
         }
         if (client_secret == NULL) {
             g_variant_lookup(info->auth_params, "ConsumerSecret", "&s", &client_secret);
         }
+    }
+    if (info->session_data != NULL) {
+        g_variant_lookup(info->session_data, "AccessToken", "&s", &access_token);
+        g_variant_lookup(info->session_data, "TokenSecret", "&s", &token_secret);
     }
 
     info->watcher->callback(info->watcher,
