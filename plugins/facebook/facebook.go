@@ -28,6 +28,8 @@ import (
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
+const facebookIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-facebook/facebook.png"
+
 type fbPlugin struct {
 	lastUpdate string
 }
@@ -83,7 +85,12 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: n.Title,
+					Icon:    facebookIcon,
+					Persist: true,
+					Popup:   true,
 				},
+				Sound:   plugins.DefaultSound(),
+				Vibrate: plugins.DefaultVibration(),
 			},
 		})
 		if n.UpdatedTime > latestUpdate {

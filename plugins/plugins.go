@@ -122,3 +122,13 @@ const (
 	PLUGIN_EMAIL = 0
 	PLUGIN_SOCIAL
 )
+
+// DefaultSound returns the path to the default sound for a Notification
+func DefaultSound() string {
+	return "/usr/share/sounds/ubuntu/notifications/Slick.ogg"
+}
+
+// DefaultVibration returns a Vibrate with the default vibration
+func DefaultVibration() *Vibrate {
+	return &Vibrate{Duration: 200}
+}
