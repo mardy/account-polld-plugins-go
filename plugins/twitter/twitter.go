@@ -189,7 +189,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: "Multiple direct messages available",
-					Body:    fmt.Sprintf("From %s", strings.Join(senders, ",")),
+					Body:    fmt.Sprintf("From %s", strings.Join(senders, ", ")),
 					Actions: []string{"http://mobile.twitter.com/messages"},
 					Icon:    twitterIcon,
 					Persist: true,
