@@ -97,7 +97,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
-					Summary: fmt.Sprintf("Mention from @%s", s.User.ScreenName),
+					Summary: fmt.Sprintf("@%s mentioned you", s.User.ScreenName),
 					Body:    s.Text,
 					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)},
 					Icon:    twitterIcon,
@@ -122,7 +122,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: "Multiple more mentions",
-					Body:    fmt.Sprintf("From %s", strings.Join(screennames, ",")),
+					Body:    fmt.Sprintf("From %s", strings.Join(screennames, ", ")),
 					Actions: []string{"http://mobile.twitter.com/i/connect"},
 					Icon:    twitterIcon,
 					Persist: true,
@@ -164,7 +164,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
-					Summary: fmt.Sprintf("Direct message from @%s", m.Sender.ScreenName),
+					Summary: fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName),
 					Body:    m.Text,
 					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)},
 					Icon:    twitterIcon,
