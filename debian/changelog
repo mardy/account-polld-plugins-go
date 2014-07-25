@@ -1,3 +1,17 @@
+account-polld (0.1+14.10.20140725-0ubuntu1) utopic; urgency=low
+
+  [ Sergio Schvezov ]
+  * Minor fixes to paths and updates to use the system credentials.
+  * Click installation check before poll
+  * Setting the interval to a more reasonable value. Allowing to
+    override on start with an envvar
+  * Normalizing notifications.
+  * Only create a max of 2 notifications and 1 consolidated one for each
+    status and direct messages poll in the twitter plugin.
+  * Add support for handling token expiry.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 25 Jul 2014 21:26:33 +0000
+
 account-polld (0.1+14.10.20140724-0ubuntu1) utopic; urgency=low
 
   [ Sergio Schvezov ]
