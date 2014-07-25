@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"launchpad.net/account-polld/accounts"
@@ -67,7 +66,7 @@ func (a *AccountManager) Delete() {
 
 func (a *AccountManager) Loop() {
 	var ok bool
-	if a.authData, ok = <- a.authChan; !ok {
+	if a.authData, ok = <-a.authChan; !ok {
 		return
 	}
 L:
