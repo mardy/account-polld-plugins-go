@@ -85,6 +85,12 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		if err := decoder.Decode(&result); err != nil {
 			return nil, err
 		}
+		// Error code 89 is used for invalid or expired tokens.
+		for _, e := range result.Errors {
+			if e.Code == 89 {
+				return nil, plugins.ErrTokenExpired
+			}
+		}
 		return nil, &result
 	}
 
@@ -151,6 +157,12 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		var result TwitterError
 		if err := decoder.Decode(&result); err != nil {
 			return nil, err
+		}
+		// Error code 89 is used for invalid or expired tokens.
+		for _, e := range result.Errors {
+			if e.Code == 89 {
+				return nil, plugins.ErrTokenExpired
+			}
 		}
 		return nil, &result
 	}

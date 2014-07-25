@@ -30,12 +30,12 @@ import (
 )
 
 type AccountManager struct {
+	watcher   *accounts.Watcher
 	authData  accounts.AuthData
-	authMutex *sync.Mutex
 	plugin    plugins.Plugin
 	interval  time.Duration
 	postWatch chan *PostWatch
-	terminate chan bool
+	authChan  chan accounts.AuthData
 }
 
 var (
@@ -51,40 +51,42 @@ func init() {
 	}
 }
 
-func NewAccountManager(authData accounts.AuthData, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
+func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
+		watcher:   watcher,
 		plugin:    plugin,
-		authData:  authData,
-		authMutex: &sync.Mutex{},
-		postWatch: postWatch,
 		interval:  pollInterval,
-		terminate: make(chan bool),
+		postWatch: postWatch,
+		authChan:  make(chan accounts.AuthData, 1),
 	}
 }
 
 func (a *AccountManager) Delete() {
-	a.terminate <- true
+	close(a.authChan)
 }
 
 func (a *AccountManager) Loop() {
-	defer close(a.terminate)
+	var ok bool
+	if a.authData, ok = <- a.authChan; !ok {
+		return
+	}
 L:
 	for {
 		log.Println("Polling set to", a.interval, "for", a.authData.AccountId)
 		select {
 		case <-time.After(a.interval):
 			a.poll()
-		case <-a.terminate:
-			break L
+		case a.authData, ok = <-a.authChan:
+			if !ok {
+				break L
+			}
+			a.poll()
 		}
 	}
 	log.Printf("Ending poll loop for account %d", a.authData.AccountId)
 }
 
 func (a *AccountManager) poll() {
-	a.authMutex.Lock()
-	defer a.authMutex.Unlock()
-
 	if !isClickInstalled(a.plugin.ApplicationId()) {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
@@ -97,11 +99,24 @@ func (a *AccountManager) poll() {
 		return
 	}
 
+	if a.authData.Error != nil {
+		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
+		return
+	}
+
 	if n, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 		// penalizing the next poll
 		if a.interval.Minutes() < maxInterval.Minutes() {
 			a.interval += pollInterval
+		}
+
+		// If the error indicates that the authentication
+		// token has expired, request reauthentication and
+		// mark data as disabled.
+		if err == plugins.ErrTokenExpired {
+			a.watcher.Refresh(a.authData.AccountId)
+			a.authData.Enabled = false
 		}
 	} else if len(n) > 0 {
 		// on success we reset the timeout to the default interval
@@ -111,9 +126,7 @@ func (a *AccountManager) poll() {
 }
 
 func (a *AccountManager) updateAuthData(authData accounts.AuthData) {
-	a.authMutex.Lock()
-	defer a.authMutex.Unlock()
-	a.authData = authData
+	a.authChan <- authData
 }
 
 func isClickInstalled(appId plugins.ApplicationId) bool {

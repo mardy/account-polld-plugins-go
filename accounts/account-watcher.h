@@ -24,6 +24,7 @@ typedef struct _AccountWatcher AccountWatcher;
 typedef void (*AccountEnabledCallback)(AccountWatcher *watcher,
                                        unsigned int account_id,
                                        const char *service_name,
+                                       GError *error,
                                        int enabled,
                                        const char *client_id,
                                        const char *client_secret,
@@ -31,8 +32,10 @@ typedef void (*AccountEnabledCallback)(AccountWatcher *watcher,
                                        const char *token_secret,
                                        void *user_data);
 
-AccountWatcher *account_watcher_new(GHashTable *services_to_watch,
+AccountWatcher *account_watcher_new(const char *service_type,
                                     AccountEnabledCallback callback,
                                     void *user_data);
+
+void account_watcher_refresh(AccountWatcher *watcher, unsigned int account_id);
 
 #endif
