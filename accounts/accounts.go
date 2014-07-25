@@ -50,8 +50,8 @@ type AuthData struct {
 }
 
 var (
-	mainLoopOnce sync.Once
-	authChannels = make(map[*C.AccountWatcher]chan<- AuthData)
+	mainLoopOnce     sync.Once
+	authChannels     = make(map[*C.AccountWatcher]chan<- AuthData)
 	authChannelsLock sync.Mutex
 )
 

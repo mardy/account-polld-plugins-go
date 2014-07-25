@@ -127,7 +127,6 @@ const (
 	PLUGIN_SOCIAL
 )
 
-
 // ErrTokenExpired is the error returned by a plugin to indicate that
 // the web service reported that the authentication token has expired.
 var ErrTokenExpired = errors.New("Token expired")
