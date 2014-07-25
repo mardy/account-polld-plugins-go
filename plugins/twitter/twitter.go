@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"launchpad.net/account-polld/accounts"
@@ -84,23 +85,54 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 	if err := decoder.Decode(&statuses); err != nil {
 		return nil, err
 	}
+
+	sort.Sort(sort.Reverse(byStatusId(statuses)))
+	if len(statuses) < 1 {
+		return nil, nil
+	}
+	p.lastMentionId = statuses[0].Id
+
 	pushMsg := []plugins.PushMessage{}
-	latestStatus := p.lastMentionId
 	for _, s := range statuses {
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Mention from @%s", s.User.ScreenName),
 					Body:    s.Text,
+					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)},
 					Icon:    twitterIcon,
+					Persist: true,
+					Popup:   true,
 				},
+				Sound:   plugins.DefaultSound(),
+				Vibrate: plugins.DefaultVibration(),
 			},
 		})
-		if s.Id > latestStatus {
-			latestStatus = s.Id
+		if len(pushMsg) == 2 {
+			break
 		}
 	}
-	p.lastMentionId = latestStatus
+	// Now we consolidate the remaining statuses
+	if len(statuses) > len(pushMsg) {
+		var screennames []string
+		for _, s := range statuses[2:] {
+			screennames = append(screennames, s.User.ScreenName)
+		}
+		pushMsg = append(pushMsg, plugins.PushMessage{
+			Notification: plugins.Notification{
+				Card: &plugins.Card{
+					Summary: "Multiple more mentions",
+					Body:    fmt.Sprintf("From %s", strings.Join(screennames, ",")),
+					Actions: []string{"http://mobile.twitter.com/i/connect"},
+					Icon:    twitterIcon,
+					Persist: true,
+					Popup:   true,
+				},
+				Sound:   plugins.DefaultSound(),
+				Vibrate: plugins.DefaultVibration(),
+			},
+		})
+	}
 	return pushMsg, nil
 }
 
@@ -120,14 +152,21 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 	if err := decoder.Decode(&dms); err != nil {
 		return nil, err
 	}
+
+	sort.Sort(sort.Reverse(byDMId(dms)))
+	if len(dms) < 1 {
+		return nil, nil
+	}
+	p.lastDirectMessageId = dms[0].Id
+
 	pushMsg := []plugins.PushMessage{}
-	latestDM := p.lastDirectMessageId
 	for _, m := range dms {
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("Direct message from @%s", m.Sender.ScreenName),
 					Body:    m.Text,
+					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)},
 					Icon:    twitterIcon,
 					Persist: true,
 					Popup:   true,
@@ -136,11 +175,31 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 				Vibrate: plugins.DefaultVibration(),
 			},
 		})
-		if m.Id > latestDM {
-			latestDM = m.Id
+		if len(pushMsg) == 2 {
+			break
 		}
 	}
-	p.lastDirectMessageId = latestDM
+	// Now we consolidate the remaining messages
+	if len(dms) > len(pushMsg) {
+		var senders []string
+		for _, m := range dms[2:] {
+			senders = append(senders, m.Sender.ScreenName)
+		}
+		pushMsg = append(pushMsg, plugins.PushMessage{
+			Notification: plugins.Notification{
+				Card: &plugins.Card{
+					Summary: "Multiple direct messages available",
+					Body:    fmt.Sprintf("From %s", strings.Join(senders, ",")),
+					Actions: []string{"http://mobile.twitter.com/messages"},
+					Icon:    twitterIcon,
+					Persist: true,
+					Popup:   true,
+				},
+				Sound:   plugins.DefaultSound(),
+				Vibrate: plugins.DefaultVibration(),
+			},
+		})
+	}
 	return pushMsg, nil
 }
 
@@ -183,6 +242,14 @@ type status struct {
 	Text      string `json:"text"`
 }
 
+// ByStatusId implements sort.Interface for []status based on
+// the Id field.
+type byStatusId []status
+
+func (s byStatusId) Len() int           { return len(s) }
+func (s byStatusId) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byStatusId) Less(i, j int) bool { return s[i].Id < s[j].Id }
+
 // Direct message format is described here:
 // https://dev.twitter.com/docs/api/1.1/get/direct_messages
 type directMessage struct {
@@ -192,6 +259,14 @@ type directMessage struct {
 	Recipient user   `json:"recipient"`
 	Text      string `json:"text"`
 }
+
+// ByStatusId implements sort.Interface for []status based on
+// the Id field.
+type byDMId []directMessage
+
+func (s byDMId) Len() int           { return len(s) }
+func (s byDMId) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byDMId) Less(i, j int) bool { return s[i].Id < s[j].Id }
 
 type user struct {
 	Id         int64  `json:"id"`
