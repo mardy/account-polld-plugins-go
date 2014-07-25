@@ -403,9 +403,9 @@ func (s S) TestParseStatuses(c *C) {
 	messages, err := p.parseStatuses(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 2)
-	c.Check(messages[0].Notification.Card.Summary, Equals, "Mention from @spode")
+	c.Check(messages[0].Notification.Card.Summary, Equals, "@spode mentioned you")
 	c.Check(messages[0].Notification.Card.Body, Equals, "@jasoncosta @themattharris Hey! Going to be in Frisco in October. Was hoping to have a meeting to talk about @thinkwall if you're around?")
-	c.Check(messages[1].Notification.Card.Summary, Equals, "Mention from @mikedroid")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "@mikedroid mentioned you")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Got the shirt @jasoncosta thanks man! Loving the #twitter bird on the shirt :-)")
 	c.Check(p.lastMentionId, Equals, int64(242613977966850048))
 }
@@ -434,7 +434,7 @@ func (s S) TestParseDirectMessages(c *C) {
 	messages, err := p.parseDirectMessages(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 1)
-	c.Check(messages[0].Notification.Card.Summary, Equals, "Direct message from @theSeanCook")
+	c.Check(messages[0].Notification.Card.Summary, Equals, "@theSeanCook sent you a DM")
 	c.Check(messages[0].Notification.Card.Body, Equals, "booyakasha")
 	c.Check(p.lastDirectMessageId, Equals, int64(240136858829479936))
 }
