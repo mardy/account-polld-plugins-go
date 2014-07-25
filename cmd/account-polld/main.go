@@ -38,9 +38,11 @@ type PostWatch struct {
 }
 
 const (
+	SERVICETYPE_POLL = "account-polld"
+
 	SERVICENAME_GMAIL    = "google-gmail-poll"
-	SERVICENAME_TWITTER  = "twitter-microblog"
-	SERVICENAME_FACEBOOK = "facebook-microblog"
+	SERVICENAME_TWITTER  = "twitter-poll"
+	SERVICENAME_FACEBOOK = "facebook-poll"
 )
 
 const (
@@ -69,9 +71,10 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch) {
+	watcher := accounts.NewWatcher(SERVICETYPE_POLL)
 	mgr := make(map[uint]*AccountManager)
 L:
-	for data := range accounts.WatchForService(SERVICENAME_GMAIL, SERVICENAME_FACEBOOK, SERVICENAME_TWITTER) {
+	for data := range watcher.C {
 		if account, ok := mgr[data.AccountId]; ok {
 			if data.Enabled {
 				log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
@@ -98,7 +101,8 @@ L:
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				continue L
 			}
-			mgr[data.AccountId] = NewAccountManager(data, postWatch, plugin)
+			mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
+			mgr[data.AccountId].updateAuthData(data)
 			go mgr[data.AccountId].Loop()
 		}
 	}
