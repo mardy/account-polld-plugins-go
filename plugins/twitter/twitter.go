@@ -34,6 +34,13 @@ var baseUrl, _ = url.Parse("https://api.twitter.com/1.1/")
 
 const twitterIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-twitter/twitter.png"
 
+const (
+	maxIndividualStatuses               = 2
+	consolidatedStatusIndexStart        = maxIndividualStatuses
+	maxIndividualDirectMessages         = 2
+	consolidatedDirectMessageIndexStart = maxIndividualDirectMessages
+)
+
 type twitterPlugin struct {
 	lastMentionId       int64
 	lastDirectMessageId int64
@@ -108,14 +115,14 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 				Vibrate: plugins.DefaultVibration(),
 			},
 		})
-		if len(pushMsg) == 2 {
+		if len(pushMsg) == maxIndividualStatuses {
 			break
 		}
 	}
 	// Now we consolidate the remaining statuses
 	if len(statuses) > len(pushMsg) {
 		var screennames []string
-		for _, s := range statuses[2:] {
+		for _, s := range statuses[consolidatedStatusIndexStart:] {
 			screennames = append(screennames, s.User.ScreenName)
 		}
 		pushMsg = append(pushMsg, plugins.PushMessage{
@@ -175,14 +182,14 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 				Vibrate: plugins.DefaultVibration(),
 			},
 		})
-		if len(pushMsg) == 2 {
+		if len(pushMsg) == maxIndividualDirectMessages {
 			break
 		}
 	}
 	// Now we consolidate the remaining messages
 	if len(dms) > len(pushMsg) {
 		var senders []string
-		for _, m := range dms[2:] {
+		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
 			senders = append(senders, m.Sender.ScreenName)
 		}
 		pushMsg = append(pushMsg, plugins.PushMessage{
