@@ -100,13 +100,14 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 					Card: &plugins.Card{
 						Summary: fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], hdr[hdrFROM]),
 						Body:    msg.Snippet,
-						// TODO this is a placeholder, Actions aren't fully defined yet and opening
-						// multiple inboxes has issues.
+						// TODO multiple inbox support pending.
 						Actions: []string{"https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
 						Icon:    gmailIcon,
 						Popup:   true,
 						Persist: true,
 					},
+					Sound:   plugins.DefaultSound(),
+					Vibrate: plugins.DefaultVibration(),
 				},
 			}
 		}

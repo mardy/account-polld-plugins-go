@@ -24,9 +24,9 @@ import (
 	"net/url"
 	"strings"
 
-	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 )
 
 var baseUrl, _ = url.Parse("https://api.twitter.com/1.1/")
@@ -129,7 +129,11 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 					Summary: fmt.Sprintf("Direct message from @%s", m.Sender.ScreenName),
 					Body:    m.Text,
 					Icon:    twitterIcon,
+					Persist: true,
+					Popup:   true,
 				},
+				Sound:   plugins.DefaultSound(),
+				Vibrate: plugins.DefaultVibration(),
 			},
 		})
 		if m.Id > latestDM {
