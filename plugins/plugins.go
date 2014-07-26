@@ -154,12 +154,12 @@ func DefaultVibration() *Vibrate {
 }
 
 func DownloadAvatar(pluginName, url string) (string, error) {
-	filePart := filepath.Join(cmdName, pluginName, path.Base(url))
-	if file, err := xdg.Data.Find(filePart); err == nil {
+	filePart := filepath.Join(cmdName, "avatars", pluginName, path.Base(url))
+	if file, err := xdg.Cache.Find(filePart); err == nil {
 		return file, nil
 	}
 
-	file, err := xdg.Data.Ensure(filePart)
+	file, err := xdg.Cache.Ensure(filePart)
 	if err != nil {
 		return "", err
 	}
