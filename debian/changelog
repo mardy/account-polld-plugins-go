@@ -1,3 +1,15 @@
+account-polld (0.1+14.10.20140728.2-0ubuntu1) utopic; urgency=low
+
+  [ Sergio Schvezov ]
+  * Return ErrTokenExpired on google auth errors
+  * If the twitter user's avatar is available use it in the notification
+    card's icon
+  * Reset poll on success even when no new notifications come in.
+  * Set the default sound to a path relative to an XDG_DATA_DIR as the
+    push client searches within those paths.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 28 Jul 2014 16:54:41 +0000
+
 account-polld (0.1+14.10.20140725-0ubuntu1) utopic; urgency=low
 
   [ Sergio Schvezov ]
