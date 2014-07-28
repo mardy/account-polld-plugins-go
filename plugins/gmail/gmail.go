@@ -128,6 +128,9 @@ func (p *GmailPlugin) parseMessageListResponse(resp *http.Response) ([]message, 
 		if err := decoder.Decode(&errResp); err != nil {
 			return nil, err
 		}
+		if errResp.Err.Code == 401 {
+			return nil, plugins.ErrTokenExpired
+		}
 		return nil, &errResp
 	}
 
