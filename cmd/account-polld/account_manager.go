@@ -117,10 +117,12 @@ func (a *AccountManager) poll() {
 			a.watcher.Refresh(a.authData.AccountId)
 			a.authData.Enabled = false
 		}
-	} else if len(n) > 0 {
+	} else {
+		if len(n) > 0 {
+			a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
+		}
 		// on success we reset the timeout to the default interval
 		a.interval = pollInterval
-		a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
 	}
 }
 
