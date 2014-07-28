@@ -32,7 +32,10 @@ import (
 
 var baseUrl, _ = url.Parse("https://api.twitter.com/1.1/")
 
-const twitterIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-twitter/twitter.png"
+const (
+	twitterIcon = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-twitter/twitter.png"
+	pluginName  = "twitter"
+)
 
 const (
 	maxIndividualStatuses               = 2
@@ -107,13 +110,17 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 
 	pushMsg := []plugins.PushMessage{}
 	for _, s := range statuses {
+		icon, err := plugins.DownloadAvatar(pluginName, s.User.Image)
+		if err != nil {
+			icon = twitterIcon
+		}
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("@%s mentioned you", s.User.ScreenName),
 					Body:    s.Text,
 					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)},
-					Icon:    twitterIcon,
+					Icon:    icon,
 					Persist: true,
 					Popup:   true,
 				},
@@ -180,13 +187,17 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 
 	pushMsg := []plugins.PushMessage{}
 	for _, m := range dms {
+		icon, err := plugins.DownloadAvatar(pluginName, m.Sender.Image)
+		if err != nil {
+			icon = twitterIcon
+		}
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
 					Summary: fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName),
 					Body:    m.Text,
 					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)},
-					Icon:    twitterIcon,
+					Icon:    icon,
 					Persist: true,
 					Popup:   true,
 				},
