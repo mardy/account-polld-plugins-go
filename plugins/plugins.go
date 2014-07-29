@@ -63,6 +63,7 @@ func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
 			},
 			Sound:   DefaultSound(),
 			Vibrate: DefaultVibration(),
+			Tag:     cmdName,
 		},
 	}
 }
@@ -91,6 +92,8 @@ type Notification struct {
 	// EmblemCounter represents and application counter hint
 	// related to the notification.
 	EmblemCounter *EmblemCounter `json:"emblem-counter,omitempty"`
+	// Tag represents a tag to identify persistent notifications
+	Tag string `json:"tag,omitempty"`
 }
 
 // Card is part of a notification and represents the user visible hints for
