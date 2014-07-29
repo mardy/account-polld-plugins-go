@@ -60,9 +60,9 @@ func main() {
 	postWatch := make(chan *PostWatch)
 
 	// Initialize i18n
-	gettext.BindTextdomain("account-polld", ".") // FIXME: where are translation going to live? Is this needed?
+	gettext.SetLocale(gettext.LC_ALL, "")
 	gettext.Textdomain("account-polld")
-
+	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
 		log.Fatal("Cannot connect to bus", err)
 	} else {
