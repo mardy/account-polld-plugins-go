@@ -26,7 +26,7 @@ import (
 	"sort"
 
 	"launchpad.net/account-polld/accounts"
-    "launchpad.net/account-polld/gettext"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 )
 

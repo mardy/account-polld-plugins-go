@@ -25,8 +25,8 @@ import (
 	"sort"
 	"strings"
 
-    "launchpad.net/account-polld/accounts"
-    "launchpad.net/account-polld/gettext"
+	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 )
