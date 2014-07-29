@@ -53,6 +53,25 @@ type AuthTokens map[string]interface{}
 // e.g.: com.ubuntu.diaspora_diaspora or com.ubuntu.diaspora_diaspora_1.0
 type ApplicationId string
 
+// NewStandardPushMessage creates a base Notification with common
+// components (members) setup.
+func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
+	return &PushMessage{
+		Notification: Notification{
+			Card: &Card{
+				Summary: summary,
+				Body:    body,
+				Actions: []string{action},
+				Icon:    icon,
+				Popup:   true,
+				Persist: true,
+			},
+			Sound:   DefaultSound(),
+			Vibrate: DefaultVibration(),
+		},
+	}
+}
+
 // PushMessage represents a data structure to be sent over to the
 // Post Office. It consists of a Notification and a Message.
 type PushMessage struct {
