@@ -1,0 +1,36 @@
+# Account-polld translation data
+# Copyright (C) 2014 Canonical Ltd.
+# This file is distributed under the same license as the account-polld package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-07-29 15:28-0300\n"
+"PO-Revision-Date: 2014-07-29 15:32-0300\n"
+"Last-Translator: Roberto Alsina <roberto.alsina@canonical.com>\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: plugins/twitter/twitter.go:121
+#, c-format
+msgid "@%s mentioned you"
+msgstr "@%s te ha mencionado"
+
+#: plugins/twitter/twitter.go:146
+#, c-format
+msgid "From %s"
+msgstr "De %s"
+
+#: plugins/gmail/gmail.go:102
+#, c-format
+msgid "Message \"%s\" from %s"
+msgstr "Mensaje %s de %s"
+
+#: plugins/twitter/twitter.go:145
+msgid "Multiple more mentions"
+msgstr "Múltimples menciones más"

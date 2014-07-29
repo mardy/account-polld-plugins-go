@@ -25,7 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"launchpad.net/account-polld/accounts"
+    "launchpad.net/account-polld/accounts"
+    "launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 )
@@ -117,7 +118,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
-					Summary: fmt.Sprintf("@%s mentioned you", s.User.ScreenName),
+					Summary: fmt.Sprintf(gettext.Gettext("@%s mentioned you"), s.User.ScreenName),
 					Body:    s.Text,
 					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)},
 					Icon:    icon,
@@ -141,8 +142,8 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		pushMsg = append(pushMsg, plugins.PushMessage{
 			Notification: plugins.Notification{
 				Card: &plugins.Card{
-					Summary: "Multiple more mentions",
-					Body:    fmt.Sprintf("From %s", strings.Join(screennames, ", ")),
+					Summary: gettext.Gettext("Multiple more mentions"),
+					Body:    fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", ")),
 					Actions: []string{"http://mobile.twitter.com/i/connect"},
 					Icon:    twitterIcon,
 					Persist: true,

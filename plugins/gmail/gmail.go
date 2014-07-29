@@ -26,6 +26,7 @@ import (
 	"sort"
 
 	"launchpad.net/account-polld/accounts"
+    "launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 )
 
@@ -98,7 +99,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			pushMsgMap[msg.ThreadId] = plugins.PushMessage{
 				Notification: plugins.Notification{
 					Card: &plugins.Card{
-						Summary: fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], hdr[hdrFROM]),
+						Summary: fmt.Sprintf(gettext.Gettext("Message \"%s\" from %s"), hdr[hdrSUBJECT], hdr[hdrFROM]),
 						Body:    msg.Snippet,
 						// TODO multiple inbox support pending.
 						Actions: []string{"https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
