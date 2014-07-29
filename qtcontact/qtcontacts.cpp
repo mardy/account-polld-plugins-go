@@ -5,6 +5,7 @@
 #include <QContactManager>
 #include <QContactAvatar>
 #include <QCoreApplication>
+#include <QScopedPointer>
 #include <QTimer>
 #include <thread>
 
@@ -21,8 +22,8 @@ extern "C" {
 QTCONTACTS_USE_NAMESPACE
 
 void getAvatar(char *email) {
-    Avatar avatar;
-    avatar.getThumbnail(email);
+    QScopedPointer<Avatar> avatar(new Avatar());
+    avatar->getThumbnail(email);
 }
 
 void Avatar::getThumbnail(char *email) {
@@ -31,11 +32,19 @@ void Avatar::getThumbnail(char *email) {
     static int argc = 1;
     QCoreApplication mApp(argc, argv);
 
-    QTimer::singleShot(0, this, SLOT(retrieveThumbnail(email)));
+    // set the map for this object and the passed email
+    _signalMapper->setMapping(this, QString(email));
+
+    QTimer::singleShot(0, this, SLOT(emitSignals()));
     mApp.exec();
 }
 
-void Avatar::retrieveThumbnail(char *email) {
+
+void Avatar::emitSignals() {
+    emit readyToRetrieve();
+}
+
+void Avatar::retrieveThumbnail(const QString& email) {
     QString avatar;
 
     QContactManager manager ("galera");
@@ -50,3 +59,4 @@ void Avatar::retrieveThumbnail(char *email) {
 
     AvatarPath(cString);
 }
+
