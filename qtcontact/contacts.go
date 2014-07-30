@@ -1,4 +1,4 @@
-package main
+package qtcontact
 
 // #cgo CXXFLAGS: -std=c++0x -pedantic-errors -Wall -fno-strict-aliasing -I/usr/share/c++/4.8
 // #cgo LDFLAGS: -lstdc++
@@ -6,14 +6,40 @@ package main
 // #include "qtcontacts.h"
 import "C"
 
-import "fmt"
+import (
+	"sync"
+	"time"
+)
 
-//export AvatarPath
-func AvatarPath(path *C.char) {
-	fmt.Println("email", C.GoString(path))
+var (
+	avatarPathChan chan string
+	m              sync.Mutex
+)
+
+//export callback
+func callback(path *C.char) {
+	avatarPathChan <- C.GoString(path)
 }
 
-func main() {
-	C.getAvatar(C.CString("sergiusens@gmail.com"))
-	C.getAvatar(C.CString("sergiusens@gmail.com"))
+// GetAvatar retrieves an avatar path for the specified email
+// address. Multiple calls to this func will be in sync
+func GetAvatar(emailAddress string) string {
+	if emailAddress == "" {
+		return ""
+	}
+
+	m.Lock()
+	defer m.Unlock()
+
+	avatarPathChan = make(chan string, 1)
+	defer close(avatarPathChan)
+
+	C.getAvatar(C.CString(emailAddress))
+
+	select {
+	case <-time.After(10 * time.Second):
+		return ""
+	case path := <-avatarPathChan:
+		return path
+	}
 }

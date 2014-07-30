@@ -22,21 +22,21 @@ extern "C" {
 QTCONTACTS_USE_NAMESPACE
 
 void getAvatar(char *email) {
-    QScopedPointer<Avatar> avatar(new Avatar());
-    avatar->getThumbnail(email);
-}
-
-void Avatar::getThumbnail(char *email) {
     static char empty[1] = {0};
     static char *argv[] = {empty, empty, empty};
     static int argc = 1;
     QCoreApplication mApp(argc, argv);
 
+    QScopedPointer<Avatar> avatar(new Avatar());
+    avatar->getThumbnail(email);
+}
+
+void Avatar::getThumbnail(char *email) {
     // set the map for this object and the passed email
     _signalMapper->setMapping(this, QString(email));
 
     QTimer::singleShot(0, this, SLOT(emitSignals()));
-    mApp.exec();
+    QCoreApplication::instance()->exec();
 }
 
 
@@ -57,6 +57,7 @@ void Avatar::retrieveThumbnail(const QString& email) {
     QByteArray byteArray = avatar.toUtf8();
     char* cString = byteArray.data();
 
-    AvatarPath(cString);
+    callback(cString);
+    QCoreApplication::instance()->quit();
 }
 

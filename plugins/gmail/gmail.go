@@ -21,12 +21,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"sort"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/qtcontact"
 )
 
 const (
@@ -93,9 +95,16 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdrFROM])
 		} else {
-			summary := fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], hdr[hdrFROM])
+			var from, avatar string
+			from = hdr[hdrFROM]
+			emailAddress, err := mail.ParseAddress(hdr[hdrFROM])
+			if err == nil {
+				from = emailAddress.Name
+				avatar = qtcontact.GetAvatar(emailAddress.Address)
+			}
+			summary := fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], from)
 			action := "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, msg.Snippet, action, "")
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, msg.Snippet, action, avatar)
 		}
 	}
 	var pushMsg []plugins.PushMessage
