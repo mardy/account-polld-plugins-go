@@ -1,3 +1,13 @@
+account-polld (0.1+14.10.20140731-0ubuntu1) utopic; urgency=low
+
+  [ CI bot ]
+  * Notification function with common parameters
+
+  [ Sergio Schvezov ]
+  * Icons as links or empty for default contact icon
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 31 Jul 2014 21:51:52 +0000
+
 account-polld (0.1+14.10.20140728.2-0ubuntu1) utopic; urgency=low
 
   [ Sergio Schvezov ]
