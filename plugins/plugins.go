@@ -19,14 +19,9 @@ package plugins
 
 import (
 	"errors"
-	"io"
-	"net/http"
 	"os"
-	"path"
-	"path/filepath"
 
 	"launchpad.net/account-polld/accounts"
-	"launchpad.net/go-xdg/v0"
 )
 
 func init() {
@@ -53,6 +48,26 @@ type AuthTokens map[string]interface{}
 // e.g.: com.ubuntu.diaspora_diaspora or com.ubuntu.diaspora_diaspora_1.0
 type ApplicationId string
 
+// NewStandardPushMessage creates a base Notification with common
+// components (members) setup.
+func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
+	return &PushMessage{
+		Notification: Notification{
+			Card: &Card{
+				Summary: summary,
+				Body:    body,
+				Actions: []string{action},
+				Icon:    icon,
+				Popup:   true,
+				Persist: true,
+			},
+			Sound:   DefaultSound(),
+			Vibrate: DefaultVibration(),
+			Tag:     cmdName,
+		},
+	}
+}
+
 // PushMessage represents a data structure to be sent over to the
 // Post Office. It consists of a Notification and a Message.
 type PushMessage struct {
@@ -77,6 +92,8 @@ type Notification struct {
 	// EmblemCounter represents and application counter hint
 	// related to the notification.
 	EmblemCounter *EmblemCounter `json:"emblem-counter,omitempty"`
+	// Tag represents a tag to identify persistent notifications
+	Tag string `json:"tag,omitempty"`
 }
 
 // Card is part of a notification and represents the user visible hints for
@@ -152,48 +169,4 @@ func DefaultSound() string {
 // DefaultVibration returns a Vibrate with the default vibration
 func DefaultVibration() *Vibrate {
 	return &Vibrate{Duration: 200}
-}
-
-func DownloadAvatar(pluginName, url string) (string, error) {
-	filePart := filepath.Join(cmdName, "avatars", pluginName, path.Base(url))
-	if file, err := xdg.Cache.Find(filePart); err == nil {
-		return file, nil
-	}
-
-	file, err := xdg.Cache.Ensure(filePart)
-	if err != nil {
-		return "", err
-	}
-
-	if err := download(file, url); err != nil {
-		return "", err
-	}
-
-	return file, nil
-}
-
-func download(file, url string) (err error) {
-	defer func() {
-		if err != nil {
-			os.Remove(file)
-		}
-	}()
-
-	out, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return err
-	}
-
-	return nil
 }
