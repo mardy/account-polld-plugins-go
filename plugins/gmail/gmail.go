@@ -96,21 +96,9 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdrFROM])
 		} else {
-			pushMsgMap[msg.ThreadId] = plugins.PushMessage{
-				Notification: plugins.Notification{
-					Card: &plugins.Card{
-						Summary: fmt.Sprintf(gettext.Gettext("Message \"%s\" from %s"), hdr[hdrSUBJECT], hdr[hdrFROM]),
-						Body:    msg.Snippet,
-						// TODO multiple inbox support pending.
-						Actions: []string{"https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId},
-						Icon:    gmailIcon,
-						Popup:   true,
-						Persist: true,
-					},
-					Sound:   plugins.DefaultSound(),
-					Vibrate: plugins.DefaultVibration(),
-				},
-			}
+			summary := fmt.Sprintf(gettext.Gettext("Message \"%s\" from %s"), hdr[hdrSUBJECT], hdr[hdrFROM])
+			action := "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, msg.Snippet, action, gmailIcon)
 		}
 	}
 	var pushMsg []plugins.PushMessage

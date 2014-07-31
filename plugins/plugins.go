@@ -53,6 +53,26 @@ type AuthTokens map[string]interface{}
 // e.g.: com.ubuntu.diaspora_diaspora or com.ubuntu.diaspora_diaspora_1.0
 type ApplicationId string
 
+// NewStandardPushMessage creates a base Notification with common
+// components (members) setup.
+func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
+	return &PushMessage{
+		Notification: Notification{
+			Card: &Card{
+				Summary: summary,
+				Body:    body,
+				Actions: []string{action},
+				Icon:    icon,
+				Popup:   true,
+				Persist: true,
+			},
+			Sound:   DefaultSound(),
+			Vibrate: DefaultVibration(),
+			Tag:     cmdName,
+		},
+	}
+}
+
 // PushMessage represents a data structure to be sent over to the
 // Post Office. It consists of a Notification and a Message.
 type PushMessage struct {
@@ -77,6 +97,8 @@ type Notification struct {
 	// EmblemCounter represents and application counter hint
 	// related to the notification.
 	EmblemCounter *EmblemCounter `json:"emblem-counter,omitempty"`
+	// Tag represents a tag to identify persistent notifications
+	Tag string `json:"tag,omitempty"`
 }
 
 // Card is part of a notification and represents the user visible hints for

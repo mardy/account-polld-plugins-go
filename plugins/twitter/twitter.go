@@ -115,20 +115,9 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		if err != nil {
 			icon = twitterIcon
 		}
-		pushMsg = append(pushMsg, plugins.PushMessage{
-			Notification: plugins.Notification{
-				Card: &plugins.Card{
-					Summary: fmt.Sprintf(gettext.Gettext("@%s mentioned you"), s.User.ScreenName),
-					Body:    s.Text,
-					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)},
-					Icon:    icon,
-					Persist: true,
-					Popup:   true,
-				},
-				Sound:   plugins.DefaultSound(),
-				Vibrate: plugins.DefaultVibration(),
-			},
-		})
+		summary := fmt.Sprintf(gettext.Gettext("@%s mentioned you"), s.User.ScreenName)
+		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, icon))
 		if len(pushMsg) == maxIndividualStatuses {
 			break
 		}
@@ -139,20 +128,10 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		for _, s := range statuses[consolidatedStatusIndexStart:] {
 			screennames = append(screennames, s.User.ScreenName)
 		}
-		pushMsg = append(pushMsg, plugins.PushMessage{
-			Notification: plugins.Notification{
-				Card: &plugins.Card{
-					Summary: gettext.Gettext("Multiple more mentions"),
-					Body:    fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", ")),
-					Actions: []string{"http://mobile.twitter.com/i/connect"},
-					Icon:    twitterIcon,
-					Persist: true,
-					Popup:   true,
-				},
-				Sound:   plugins.DefaultSound(),
-				Vibrate: plugins.DefaultVibration(),
-			},
-		})
+		summary := gettext.Gettext("Multiple more mentions")
+		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
+		action := "http://mobile.twitter.com/i/connect"
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
 	}
 	return pushMsg, nil
 }
@@ -192,20 +171,9 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		if err != nil {
 			icon = twitterIcon
 		}
-		pushMsg = append(pushMsg, plugins.PushMessage{
-			Notification: plugins.Notification{
-				Card: &plugins.Card{
-					Summary: fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName),
-					Body:    m.Text,
-					Actions: []string{fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)},
-					Icon:    icon,
-					Persist: true,
-					Popup:   true,
-				},
-				Sound:   plugins.DefaultSound(),
-				Vibrate: plugins.DefaultVibration(),
-			},
-		})
+		summary := fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName)
+		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, icon))
 		if len(pushMsg) == maxIndividualDirectMessages {
 			break
 		}
@@ -216,20 +184,10 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
 			senders = append(senders, m.Sender.ScreenName)
 		}
-		pushMsg = append(pushMsg, plugins.PushMessage{
-			Notification: plugins.Notification{
-				Card: &plugins.Card{
-					Summary: "Multiple direct messages available",
-					Body:    fmt.Sprintf("From %s", strings.Join(senders, ", ")),
-					Actions: []string{"http://mobile.twitter.com/messages"},
-					Icon:    twitterIcon,
-					Persist: true,
-					Popup:   true,
-				},
-				Sound:   plugins.DefaultSound(),
-				Vibrate: plugins.DefaultVibration(),
-			},
-		})
+		summary := "Multiple direct messages available"
+		body := fmt.Sprintf("From %s", strings.Join(senders, ", "))
+		action := "http://mobile.twitter.com/messages"
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
 	}
 	return pushMsg, nil
 }
