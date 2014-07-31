@@ -30,3 +30,4 @@ Description: Poll daemon for notifications though the Ubuntu Push Client
  communicates with the postal service provided by the ubuntu push client
  to expose notifications for the click webapps for the aforementioned
  services.
+X-Ubuntu-Use-Langpack: yes
