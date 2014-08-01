@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
@@ -109,7 +110,8 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image))
+		epoch := toEpoch(s.CreatedAt)
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image, epoch))
 		if len(pushMsg) == maxIndividualStatuses {
 			break
 		}
@@ -125,7 +127,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
 		action := "http://mobile.twitter.com/i/connect"
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", 0))
 	}
 	return pushMsg, nil
 }
@@ -164,7 +166,8 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image))
+		epoch := toEpoch(m.CreatedAt)
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image, epoch))
 		if len(pushMsg) == maxIndividualDirectMessages {
 			break
 		}
@@ -180,7 +183,8 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
 		action := "http://mobile.twitter.com/messages"
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
+		epoch := time.Now().Unix()
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
 	}
 	return pushMsg, nil
 }
@@ -213,6 +217,13 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 	}
 	messages = append(messages, dms...)
 	return
+}
+
+func toEpoch(timestamp string) int64 {
+	if t, err := time.Parse(time.RubyDate, timestamp); err == nil {
+		return t.Unix()
+	}
+	return time.Now().Unix()
 }
 
 // Status format is described here:

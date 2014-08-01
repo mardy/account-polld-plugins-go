@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	APP_ID = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+	APP_ID           = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
 )
 
@@ -111,7 +111,8 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			body := fmt.Sprintf(gettext.Gettext("%s\n%s"), hdr[hdrSUBJECT], msg.Snippet)
 			// fmt with label personal and threadId
 			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "")
+			epoch := hdr.getEpoch()
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 		}
 	}
 	var pushMsg []plugins.PushMessage
