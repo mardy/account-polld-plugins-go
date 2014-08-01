@@ -106,7 +106,8 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 
 	pushMsg := []plugins.PushMessage{}
 	for _, s := range statuses {
-		summary := fmt.Sprintf("@%s mentioned you", s.User.ScreenName)
+		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
+		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image))
 		if len(pushMsg) == maxIndividualStatuses {
@@ -117,9 +118,11 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 	if len(statuses) > len(pushMsg) {
 		var screennames []string
 		for _, s := range statuses[consolidatedStatusIndexStart:] {
-			screennames = append(screennames, s.User.ScreenName)
+			screennames = append(screennames, "@"+s.User.ScreenName)
 		}
+		// TRANSLATORS: This represents a notification summary about more twitter mentions available
 		summary := gettext.Gettext("Multiple more mentions")
+		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
 		action := "http://mobile.twitter.com/i/connect"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
@@ -158,7 +161,8 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 
 	pushMsg := []plugins.PushMessage{}
 	for _, m := range dms {
-		summary := fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName)
+		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
+		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image))
 		if len(pushMsg) == maxIndividualDirectMessages {
@@ -169,10 +173,12 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 	if len(dms) > len(pushMsg) {
 		var senders []string
 		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
-			senders = append(senders, m.Sender.ScreenName)
+			senders = append(senders, "@"+m.Sender.ScreenName)
 		}
-		summary := "Multiple direct messages available"
-		body := fmt.Sprintf("From %s", strings.Join(senders, ", "))
+		// TRANSLATORS: This represents a notification summary about more twitter direct messages available
+		summary := gettext.Gettext("Multiple direct messages available")
+		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
+		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
 		action := "http://mobile.twitter.com/messages"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
 	}

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"sort"
@@ -91,12 +92,24 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 
 	for _, msg := range messages {
 		hdr := msg.Payload.mapHeaders()
+
+		from := hdr[hdrFROM]
+		if emailAddress, err := mail.ParseAddress(hdr[hdrFROM]); err == nil {
+			if emailAddress.Name != "" {
+				from = emailAddress.Name
+			}
+		}
+
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
-			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdrFROM])
+			// TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
+			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(gettext.Gettext(", %s"), from)
 		} else {
-			summary := fmt.Sprintf(gettext.Gettext("Message \"%s\" from %s"), hdr[hdrSUBJECT], hdr[hdrFROM])
+			// TRANSLATORS: the %s is the "from" header corresponding to a specific email
+			summary := fmt.Sprintf(gettext.Gettext("%s"), from)
+			// TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
+			body := fmt.Sprintf(gettext.Gettext("%s\n%s"), hdr[hdrSUBJECT], msg.Snippet)
 			action := "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, msg.Snippet, action, "")
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "")
 		}
 	}
 	var pushMsg []plugins.PushMessage
