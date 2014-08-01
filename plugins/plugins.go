@@ -50,22 +50,24 @@ type ApplicationId string
 
 // NewStandardPushMessage creates a base Notification with common
 // components (members) setup.
-func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
-	return &PushMessage{
+func NewStandardPushMessage(summary, body, action, icon string, epoch int64) *PushMessage {
+	pm := &PushMessage{
 		Notification: Notification{
 			Card: &Card{
-				Summary: summary,
-				Body:    body,
-				Actions: []string{action},
-				Icon:    icon,
-				Popup:   true,
-				Persist: true,
+				Summary:   summary,
+				Body:      body,
+				Actions:   []string{action},
+				Icon:      icon,
+				Timestamp: epoch,
+				Popup:     true,
+				Persist:   true,
 			},
 			Sound:   DefaultSound(),
 			Vibrate: DefaultVibration(),
 			Tag:     cmdName,
 		},
 	}
+	return pm
 }
 
 // PushMessage represents a data structure to be sent over to the
@@ -112,6 +114,8 @@ type Card struct {
 	Icon string `json:"icon,omitempty"`
 	// Whether to show in notification centre.
 	Persist bool `json:"persist,omitempty"`
+	// Seconds since the unix epoch, useful for persistent cards.
+	Timestamp int64 `json:"Timestamp,omitempty"`
 }
 
 // Vibrate is part of a notification and represents the user haptic hints

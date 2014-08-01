@@ -21,10 +21,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"time"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 )
+
+const facebookTime = "2006-01-02T15:04:05-0700"
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
@@ -84,7 +87,8 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 		}
 		// TODO proper action needed
 		action := "https://m.facebook.com"
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.Title, "", action, ""))
+		epoch := toEpoch(n.UpdatedTime)
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.Title, "", action, "", epoch))
 		if n.UpdatedTime > latestUpdate {
 			latestUpdate = n.UpdatedTime
 		}
@@ -99,6 +103,13 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, err
 		return nil, err
 	}
 	return p.parseResponse(resp)
+}
+
+func toEpoch(timestamp string) int64 {
+	if t, err := time.Parse(facebookTime, timestamp); err == nil {
+		return t.Unix()
+	}
+	return time.Now().Unix()
 }
 
 // The notifications response format is described here:
