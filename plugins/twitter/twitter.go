@@ -127,7 +127,8 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
 		action := "http://mobile.twitter.com/i/connect"
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", 0))
+		epoch := time.Now().Unix()
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
 	}
 	return pushMsg, nil
 }
