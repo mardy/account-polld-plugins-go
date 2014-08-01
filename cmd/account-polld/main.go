@@ -63,6 +63,7 @@ func main() {
 	gettext.SetLocale(gettext.LC_ALL, "")
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
+
 	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
 		log.Fatal("Cannot connect to bus", err)
 	} else {
