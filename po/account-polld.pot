@@ -1,48 +1,60 @@
-# Account-polld translation data
-# Copyright (C) 2014 Canonical Ltd.
-# This file is distributed under the same license as the account-polld package.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
-msgid   ""
-msgstr  "Project-Id-Version: PACKAGE VERSION\n"
-        "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-07-29 15:28-0300\n"
-        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-        "Language-Team: LANGUAGE <LL@li.org>\n"
-        "Language: \n"
-        "MIME-Version: 1.0\n"
-        "Content-Type: text/plain; charset=UTF-8\n"
-        "Content-Transfer-Encoding: 8bit\n"
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-08-01 11:24-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
 
+#. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
+#: plugins/gmail/gmail.go:105
+#, c-format
+msgid ", %s"
+msgstr ""
+
+#. TRANSLATORS: the %s is the "from" header corresponding to a specific email
 #: plugins/gmail/gmail.go:108
 #, c-format
-msgid   "%s"
-msgstr  ""
+msgid "%s"
+msgstr ""
 
 #. TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
-#: plugins/gmail/gmail.go:109
+#: plugins/gmail/gmail.go:110
 #, c-format
-msgid   "%s\n%s"
-msgstr  ""
+msgid ""
+"%s\n"
+"%s"
+msgstr ""
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
-#: plugins/twitter/twitter.go:118
-#: plugins/twitter/twitter.go:174
+#: plugins/twitter/twitter.go:110 plugins/twitter/twitter.go:165
 #, c-format
-msgid   "%s. @%s"
-msgstr  ""
+msgid "%s. @%s"
+msgstr ""
 
-#: plugins/twitter/twitter.go:131
-msgid   "Multiple more mentions"
-msgstr  ""
+#. TRANSLATORS: The represents a notification summary about more twitter mentions available
+#: plugins/twitter/twitter.go:124
+msgid "Multiple more mentions"
+msgstr ""
 
-#. From followed by the list of twitter usernames.
-#: plugins/twitter/twitter.go:132
-#: plugins/twitter/twitter.go:175
-msgid   "From %s"
-msgstr  ""
+#. TRANSLATORS: The represents a notification body with the comma separated twitter usernames
+#: plugins/twitter/twitter.go:126 plugins/twitter/twitter.go:181
+#, c-format
+msgid "From %s"
+msgstr ""
 
-#: plugins/twitter/twitter.go:187
-msgid   "Multiple direct messages available"
-msgstr  ""
+#. TRANSLATORS: The represents a notification summary about more twitter direct messages available
+#: plugins/twitter/twitter.go:179
+msgid "Multiple direct messages available"
+msgstr ""
