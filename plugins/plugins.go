@@ -19,14 +19,9 @@ package plugins
 
 import (
 	"errors"
-	"io"
-	"net/http"
 	"os"
-	"path"
-	"path/filepath"
 
 	"launchpad.net/account-polld/accounts"
-	"launchpad.net/go-xdg/v0"
 )
 
 func init() {
@@ -174,48 +169,4 @@ func DefaultSound() string {
 // DefaultVibration returns a Vibrate with the default vibration
 func DefaultVibration() *Vibrate {
 	return &Vibrate{Duration: 200}
-}
-
-func DownloadAvatar(pluginName, url string) (string, error) {
-	filePart := filepath.Join(cmdName, "avatars", pluginName, path.Base(url))
-	if file, err := xdg.Cache.Find(filePart); err == nil {
-		return file, nil
-	}
-
-	file, err := xdg.Cache.Ensure(filePart)
-	if err != nil {
-		return "", err
-	}
-
-	if err := download(file, url); err != nil {
-		return "", err
-	}
-
-	return file, nil
-}
-
-func download(file, url string) (err error) {
-	defer func() {
-		if err != nil {
-			os.Remove(file)
-		}
-	}()
-
-	out, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return err
-	}
-
-	return nil
 }
