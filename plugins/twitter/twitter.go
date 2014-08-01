@@ -115,7 +115,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		if err != nil {
 			icon = twitterIcon
 		}
-		summary := fmt.Sprintf(gettext.Gettext("@%s mentioned you"), s.User.ScreenName)
+		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, icon))
 		if len(pushMsg) == maxIndividualStatuses {
@@ -126,7 +126,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 	if len(statuses) > len(pushMsg) {
 		var screennames []string
 		for _, s := range statuses[consolidatedStatusIndexStart:] {
-			screennames = append(screennames, s.User.ScreenName)
+			screennames = append(screennames, "@"+s.User.ScreenName)
 		}
 		summary := gettext.Gettext("Multiple more mentions")
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
@@ -171,7 +171,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		if err != nil {
 			icon = twitterIcon
 		}
-		summary := fmt.Sprintf("@%s sent you a DM", m.Sender.ScreenName)
+		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, icon))
 		if len(pushMsg) == maxIndividualDirectMessages {
@@ -182,10 +182,10 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 	if len(dms) > len(pushMsg) {
 		var senders []string
 		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
-			senders = append(senders, m.Sender.ScreenName)
+			senders = append(senders, "@"+m.Sender.ScreenName)
 		}
-		summary := "Multiple direct messages available"
-		body := fmt.Sprintf("From %s", strings.Join(senders, ", "))
+		summary := gettext.Gettext("Multiple direct messages available")
+		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
 		action := "http://mobile.twitter.com/messages"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
 	}

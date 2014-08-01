@@ -15,21 +15,34 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: plugins/twitter/twitter.go:121
+#: plugins/gmail/gmail.go:108
 #, c-format
-msgid   "@%s mentioned you"
+msgid   "%s"
 msgstr  ""
 
-#: plugins/twitter/twitter.go:146
+#. This is the email subject followed by the message snippet
+#: plugins/gmail/gmail.go:109
 #, c-format
+msgid   "%s\n%s"
+msgstr  ""
+
+#. This is the twitter users Name followed by the username.
+#: plugins/twitter/twitter.go:118
+#: plugins/twitter/twitter.go:174
+#, c-format
+msgid   "%s. @%s"
+msgstr  ""
+
+#: plugins/twitter/twitter.go:131
+msgid   "Multiple more mentions"
+msgstr  ""
+
+#. From followed by the list of twitter usernames.
+#: plugins/twitter/twitter.go:132
+#: plugins/twitter/twitter.go:175
 msgid   "From %s"
 msgstr  ""
 
-#: plugins/gmail/gmail.go:102
-#, c-format
-msgid   "Message \"%s\" from %s"
-msgstr  ""
-
-#: plugins/twitter/twitter.go:145
-msgid   "Multiple more mentions"
+#: plugins/twitter/twitter.go:187
+msgid   "Multiple direct messages available"
 msgstr  ""
