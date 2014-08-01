@@ -33,8 +33,6 @@ import (
 
 const (
 	APP_ID = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
-	// TODO either use the helper, embed the icon or libclick, this app is preinstalled so the path is safe.
-	gmailIcon        = "/usr/share/click/preinstalled/.click/users/@all/com.ubuntu.developer.webapps.webapp-gmail/gmail.png"
 	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
 )
 
@@ -110,7 +108,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			body := fmt.Sprintf(gettext.Gettext("%s\n%s"), hdr[hdrSUBJECT], msg.Snippet)
 			// fmt with label personal and threadId
 			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, gmailIcon)
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "")
 		}
 	}
 	var pushMsg []plugins.PushMessage
