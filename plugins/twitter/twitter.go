@@ -106,6 +106,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 
 	pushMsg := []plugins.PushMessage{}
 	for _, s := range statuses {
+		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image))
@@ -119,7 +120,9 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		for _, s := range statuses[consolidatedStatusIndexStart:] {
 			screennames = append(screennames, "@"+s.User.ScreenName)
 		}
+		// TRANSLATORS: The represents a notification summary about more twitter mentions available
 		summary := gettext.Gettext("Multiple more mentions")
+		// TRANSLATORS: The represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
 		action := "http://mobile.twitter.com/i/connect"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
@@ -158,6 +161,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 
 	pushMsg := []plugins.PushMessage{}
 	for _, m := range dms {
+		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
 		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image))
@@ -171,7 +175,9 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
 			senders = append(senders, "@"+m.Sender.ScreenName)
 		}
+		// TRANSLATORS: The represents a notification summary about more twitter direct messages available
 		summary := gettext.Gettext("Multiple direct messages available")
+		// TRANSLATORS: The represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
 		action := "http://mobile.twitter.com/messages"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
