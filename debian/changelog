@@ -1,3 +1,20 @@
+account-polld (0.1+14.10.20140801.2-0ubuntu1) utopic; urgency=low
+
+  [ Sergio Schvezov ]
+  * Card strings updated according to designs.
+  * Using the proper mobile site gmail url.
+  * Using the designed sound file.
+  * Using a more indicative icon to display in the account
+    configuration.
+  * When logging account refresh limit to logging the corresponding
+    account id only.
+  * Use the timestamp entry for cards.
+
+  [ Roberto Alsina ]
+  * Translation support for account-polld
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 01 Aug 2014 22:55:25 +0000
+
 account-polld (0.1+14.10.20140731-0ubuntu1) utopic; urgency=low
 
   [ CI bot ]
