@@ -163,7 +163,7 @@ var cmdName string
 // DefaultSound returns the path to the default sound for a Notification
 func DefaultSound() string {
 	// path is searched within XDG_DATA_DIRS
-	return "sounds/ubuntu/notifications/Slick.ogg"
+	return "sounds/ubuntu/notifications/Blip.ogg"
 }
 
 // DefaultVibration returns a Vibrate with the default vibration
