@@ -83,7 +83,7 @@ L:
 	for data := range watcher.C {
 		if account, ok := mgr[data.AccountId]; ok {
 			if data.Enabled {
-				log.Printf("New account data for %d - was %#v, now is %#v", data.AccountId, account.authData, data)
+				log.Println("New account data for existing account with id", data.AccountId)
 				account.updateAuthData(data)
 			} else {
 				account.Delete()
