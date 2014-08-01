@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-08-01 11:24-0300\n"
+"POT-Creation-Date: 2014-08-01 12:12-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,18 +43,18 @@ msgstr ""
 msgid "%s. @%s"
 msgstr ""
 
-#. TRANSLATORS: The represents a notification summary about more twitter mentions available
+#. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:124
 msgid "Multiple more mentions"
 msgstr ""
 
-#. TRANSLATORS: The represents a notification body with the comma separated twitter usernames
+#. TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 #: plugins/twitter/twitter.go:126 plugins/twitter/twitter.go:181
 #, c-format
 msgid "From %s"
 msgstr ""
 
-#. TRANSLATORS: The represents a notification summary about more twitter direct messages available
+#. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:179
 msgid "Multiple direct messages available"
 msgstr ""
