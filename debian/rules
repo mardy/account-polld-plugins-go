@@ -11,6 +11,7 @@ DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
 	dh $@ \
 		--buildsystem=golang \
 		--with=golang \
+		--with=translations \
 		--fail-missing
 
 override_dh_auto_install:

@@ -25,6 +25,7 @@ import (
 	"log"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/facebook"
 	"launchpad.net/account-polld/plugins/gmail"
@@ -57,6 +58,11 @@ func init() {
 func main() {
 	// TODO NewAccount called here is just for playing purposes.
 	postWatch := make(chan *PostWatch)
+
+	// Initialize i18n
+	gettext.SetLocale(gettext.LC_ALL, "")
+	gettext.Textdomain("account-polld")
+	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
 	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
 		log.Fatal("Cannot connect to bus", err)

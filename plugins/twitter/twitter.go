@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
 )
@@ -118,8 +119,8 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		for _, s := range statuses[consolidatedStatusIndexStart:] {
 			screennames = append(screennames, s.User.ScreenName)
 		}
-		summary := "Multiple more mentions"
-		body := fmt.Sprintf("From %s", strings.Join(screennames, ", "))
+		summary := gettext.Gettext("Multiple more mentions")
+		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
 		action := "http://mobile.twitter.com/i/connect"
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, ""))
 	}

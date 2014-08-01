@@ -26,6 +26,7 @@ import (
 	"sort"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 )
 
@@ -93,7 +94,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", hdr[hdrFROM])
 		} else {
-			summary := fmt.Sprintf("Message \"%s\" from %s", hdr[hdrSUBJECT], hdr[hdrFROM])
+			summary := fmt.Sprintf(gettext.Gettext("Message \"%s\" from %s"), hdr[hdrSUBJECT], hdr[hdrFROM])
 			action := "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId
 			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, msg.Snippet, action, "")
 		}
