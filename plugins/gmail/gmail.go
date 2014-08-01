@@ -95,7 +95,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		hdr := msg.Payload.mapHeaders()
 
 		from := hdr[hdrFROM]
-		if emailAddress, err := mail.ParseAddress(hdr[hdrFROM]); err != nil {
+		if emailAddress, err := mail.ParseAddress(hdr[hdrFROM]); err == nil {
 			if emailAddress.Name != "" {
 				from = emailAddress.Name
 			}
