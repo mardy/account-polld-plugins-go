@@ -101,9 +101,11 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		}
 
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
-			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(", %s", from)
+			// TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
+			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(gettext.Gettext(", %s"), from)
 		} else {
 			summary := fmt.Sprintf(gettext.Gettext("%s"), hdr[hdrSUBJECT], from)
+			// TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 			body := fmt.Sprintf(gettext.Gettext("%s\n%s"), hdr[hdrSUBJECT], msg.Snippet)
 			action := "https://mail.google.com/mail/u/0/?pli=1#inbox/" + msg.ThreadId
 			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "")

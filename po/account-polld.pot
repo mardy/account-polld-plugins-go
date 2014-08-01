@@ -20,13 +20,13 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
 msgid   "%s"
 msgstr  ""
 
-#. This is the email subject followed by the message snippet
+#. TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 #: plugins/gmail/gmail.go:109
 #, c-format
 msgid   "%s\n%s"
 msgstr  ""
 
-#. This is the twitter users Name followed by the username.
+#. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:118
 #: plugins/twitter/twitter.go:174
 #, c-format
