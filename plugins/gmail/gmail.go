@@ -35,8 +35,9 @@ import (
 )
 
 const (
-	APP_ID           = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
-	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
+	APP_ID                       = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+	gmailDispatchUrl             = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
+	individualNotificationsLimit = 3
 )
 
 var baseUrl, _ = url.Parse("https://www.googleapis.com/gmail/v1/users/me/")
@@ -128,7 +129,21 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 	var pushMsg []plugins.PushMessage
 	for _, v := range pushMsgMap {
 		pushMsg = append(pushMsg, v)
+		if len(pushMsg) == individualNotificationsLimit {
+			break
+		}
 	}
+	if len(pushMsgMap) > individualNotificationsLimit {
+		// TRANSLATORS: This represents a notification summary about more unread emails
+		summary := gettext.Gettext("More unread emails available")
+		// TRANSLATORS: the first %d refers to approximate email message count
+		body := fmt.Sprintf(gettext.Gettext("You have an approximate of %d unread messages"), len(pushMsgMap))
+		// fmt with label personal and no threadId
+		action := fmt.Sprintf(gmailDispatchUrl, "personal")
+		epoch := time.Now().Unix()
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
+	}
+
 	return pushMsg, nil
 }
 
