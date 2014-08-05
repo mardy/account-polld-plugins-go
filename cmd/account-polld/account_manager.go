@@ -69,9 +69,11 @@ func (a *AccountManager) Loop() {
 	if a.authData, ok = <-a.authChan; !ok {
 		return
 	}
+	// This is an initial out of loop poll
+	a.poll()
 L:
 	for {
-		log.Println("Polling set to", a.interval, "for", a.authData.AccountId)
+		log.Println("Next poll set to", a.interval, "for", a.authData.AccountId)
 		select {
 		case <-time.After(a.interval):
 			a.poll()
@@ -86,6 +88,7 @@ L:
 }
 
 func (a *AccountManager) poll() {
+	log.Println("Polling account", a.authData.AccountId)
 	if !isClickInstalled(a.plugin.ApplicationId()) {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
@@ -118,6 +121,7 @@ func (a *AccountManager) poll() {
 			a.authData.Enabled = false
 		}
 	} else {
+		log.Println("Account", a.authData.AccountId, "has", len(n), "updates to report")
 		if len(n) > 0 {
 			a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
 		}
