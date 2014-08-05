@@ -44,6 +44,7 @@ const (
 type twitterPlugin struct {
 	lastMentionId       int64
 	lastDirectMessageId int64
+	bootstrap           bool
 }
 
 func New() plugins.Plugin {
@@ -217,6 +218,10 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 		return
 	}
 	messages = append(messages, dms...)
+	if !p.bootstrap {
+		p.bootstrap = false
+		return nil, nil
+	}
 	return
 }
 
