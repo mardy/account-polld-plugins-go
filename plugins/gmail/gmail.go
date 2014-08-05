@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"time"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
@@ -37,6 +38,9 @@ const (
 )
 
 var baseUrl, _ = url.Parse("https://www.googleapis.com/gmail/v1/users/me/")
+
+// timeDelta defines how old messages can be to be reported.
+var timeDelta = time.Duration(time.Hour * 24)
 
 type GmailPlugin struct {
 	// reportedIds holds the messages that have already been notified. This
@@ -89,6 +93,7 @@ func (p *GmailPlugin) reported(id string) bool {
 }
 
 func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMessage, error) {
+	timestamp := time.Now()
 	pushMsgMap := make(pushes)
 
 	for _, msg := range messages {
@@ -104,7 +109,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			// TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(gettext.Gettext(", %s"), from)
-		} else {
+		} else if t := hdr.getTimestamp(); t.Sub(timestamp) < timeDelta {
 			// TRANSLATORS: the %s is the "from" header corresponding to a specific email
 			summary := fmt.Sprintf(gettext.Gettext("%s"), from)
 			// TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"

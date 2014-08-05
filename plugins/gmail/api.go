@@ -83,16 +83,20 @@ func (p *payload) mapHeaders() headers {
 	return headers
 }
 
-func (hdr headers) getEpoch() int64 {
+func (hdr headers) getTimestamp() time.Time {
 	timestamp, ok := hdr[hdrDATE]
 	if !ok {
-		return time.Now().Unix()
+		return time.Now()
 	}
 
 	if t, err := time.Parse(gmailTime, timestamp); err == nil {
-		return t.Unix()
+		return t
 	}
-	return time.Now().Unix()
+	return time.Now()
+}
+
+func (hdr headers) getEpoch() int64 {
+	return hdr.getTimestamp().Unix()
 }
 
 // messageHeader represents the message headers.
