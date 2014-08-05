@@ -217,11 +217,11 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 	if err != nil {
 		return
 	}
-	messages = append(messages, dms...)
 	if !p.bootstrap {
-		p.bootstrap = false
+		p.bootstrap = true
 		return nil, nil
 	}
+	messages = append(messages, dms...)
 	return
 }
 
