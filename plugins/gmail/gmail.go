@@ -27,6 +27,8 @@ import (
 	"sort"
 	"time"
 
+	"log"
+
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
@@ -105,11 +107,12 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 				from = emailAddress.Name
 			}
 		}
+		msgStamp := hdr.getTimestamp()
 
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
 			// TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 			pushMsgMap[msg.ThreadId].Notification.Card.Summary += fmt.Sprintf(gettext.Gettext(", %s"), from)
-		} else if t := hdr.getTimestamp(); t.Sub(timestamp) < timeDelta {
+		} else if msgStamp.Sub(timestamp) < timeDelta {
 			// TRANSLATORS: the %s is the "from" header corresponding to a specific email
 			summary := fmt.Sprintf(gettext.Gettext("%s"), from)
 			// TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
@@ -118,6 +121,8 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
 			epoch := hdr.getEpoch()
 			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+		} else {
+			log.Println("gmail: skipping message id", msg.Id, "with date", msgStamp, "older than %v", timeDelta)
 		}
 	}
 	var pushMsg []plugins.PushMessage
