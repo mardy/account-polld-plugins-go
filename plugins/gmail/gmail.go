@@ -124,7 +124,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			epoch := hdr.getEpoch()
 			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 		} else {
-			log.Println("gmail: skipping message id", msg.Id, "with date", msgStamp, "older than %s", timeDelta)
+			log.Println("gmail: skipping message id", msg.Id, "with date", msgStamp, "older than", timeDelta)
 		}
 	}
 	var pushMsg []plugins.PushMessage
