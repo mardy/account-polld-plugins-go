@@ -73,7 +73,7 @@ func (a *AccountManager) Loop() {
 	a.poll()
 L:
 	for {
-		log.Println("Next poll set to", a.interval, "for", a.authData.AccountId)
+		log.Println("Next poll set to", a.interval, "for account", a.authData.AccountId)
 		select {
 		case <-time.After(a.interval):
 			a.poll()
