@@ -25,5 +25,6 @@ echo Removing $desktop.tr.h $online_accounts_application.tr.h
 rm $desktop.tr.h $online_accounts_application.tr.h
 
 if [ "$1" = "--commit" ] && [ -n "$(bzr status $pot_file)" ]; then
+    echo Commiting $pot_file
     bzr commit -m "Updated translation template" $pot_file
 fi
