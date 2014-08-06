@@ -41,6 +41,16 @@ override_dh_auto_install:
 		${CURDIR}/debian/account-polld/usr/share/accounts/service_types/
 	cp ${CURDIR}/data/account-polld.desktop \
 		${CURDIR}/debian/account-polld/usr/share/applications/
+	# translations
+	appname=account-polld; \
+	for pofile in po/*.po; do \
+		pofilename="$${pofile##*/}"; \
+		langcode="$${pofilename%.*}"; \
+		localedir="debian/$$appname/usr/share/locale/$$langcode/LC_MESSAGES"; \
+		mkdir -p $$localedir; \
+		mofile="$$localedir/$$appname.mo"; \
+		msgfmt -o $$mofile $$pofile; \
+	done
 
 override_dh_strip:
 	echo "Skipping strip"
