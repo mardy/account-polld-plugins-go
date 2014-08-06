@@ -18,12 +18,14 @@
 package gmail
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/mail"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -41,22 +43,97 @@ const (
 	individualNotificationsLimit = 2
 )
 
+type reportedIdMap map[string]time.Time
+
 var baseUrl, _ = url.Parse("https://www.googleapis.com/gmail/v1/users/me/")
 
 // timeDelta defines how old messages can be to be reported.
 var timeDelta = time.Duration(time.Hour * 24)
 
+// trackDelta defines how old messages can be before removed from tracking
+var trackDelta = time.Duration(time.Hour * 24 * 7)
+
+var idStoreSubPath = filepath.Join("gmail", "reportedIds.json")
+
 type GmailPlugin struct {
 	// reportedIds holds the messages that have already been notified. This
 	// approach is taken against timestamps as it avoids needing to call
 	// get on the message.
-	//
-	// TODO determine if persisting the list to avoid renotification on reboot.
-	reportedIds map[string]bool
+	reportedIds reportedIdMap
+}
+
+func idsFromStorage() (ids reportedIdMap, err error) {
+	var p string
+	defer func() {
+		if err != nil {
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = plugins.DataFind(idStoreSubPath)
+	if err != nil {
+		return nil, err
+	}
+	file, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	jsonReader := json.NewDecoder(file)
+	if err := jsonReader.Decode(&ids); err != nil {
+		return nil, err
+	}
+
+	// discard old ids
+	timestamp := time.Now()
+	for k, v := range ids {
+		delta := timestamp.Sub(v)
+		if delta > trackDelta {
+			log.Println("gmail plugin: deleting", k, "as", delta, "is greater than", trackDelta)
+			delete(ids, k)
+		}
+	}
+	return ids, nil
+}
+
+func (ids reportedIdMap) persist() (err error) {
+	var p string
+	defer func() {
+		if err != nil {
+			log.Println("gmail plugin: failed to save state:", err)
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = plugins.DataEnsure(idStoreSubPath)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	w := bufio.NewWriter(file)
+	defer w.Flush()
+	jsonWriter := json.NewEncoder(w)
+	if err := jsonWriter.Encode(ids); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func New() *GmailPlugin {
-	return &GmailPlugin{}
+	reportedIds, err := idsFromStorage()
+	if err != nil {
+		log.Println("gmail plugin: cannot load previous state from storage:", err)
+	} else {
+		log.Println("gmail plugin: report state loaded from storage")
+	}
+	return &GmailPlugin{reportedIds}
 }
 
 func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
@@ -93,7 +170,8 @@ func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, 
 }
 
 func (p *GmailPlugin) reported(id string) bool {
-	return p.reportedIds[id]
+	_, ok := p.reportedIds[id]
+	return ok
 }
 
 func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMessage, error) {
@@ -181,15 +259,16 @@ func (p *GmailPlugin) parseMessageListResponse(resp *http.Response) ([]message, 
 func (p *GmailPlugin) messageListFilter(messages []message) []message {
 	sort.Sort(byId(messages))
 	var reportMsg []message
-	var ids = make(map[string]bool)
+	var ids = make(reportedIdMap)
 
 	for _, msg := range messages {
 		if !p.reported(msg.Id) {
 			reportMsg = append(reportMsg, msg)
 		}
-		ids[msg.Id] = true
+		ids[msg.Id] = time.Now()
 	}
 	p.reportedIds = ids
+	p.reportedIds.persist()
 	return reportMsg
 }
 

@@ -20,12 +20,14 @@ package plugins
 import (
 	"errors"
 	"os"
+	"path/filepath"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/go-xdg/v0"
 )
 
 func init() {
-	cmdName = os.Args[0]
+	cmdName = filepath.Base(os.Args[0])
 }
 
 // Plugin is an interface which the plugins will adhere to for the poll
@@ -163,6 +165,14 @@ const (
 var ErrTokenExpired = errors.New("Token expired")
 
 var cmdName string
+
+func DataFind(path string) (string, error) {
+	return xdg.Data.Find(filepath.Join(cmdName, path))
+}
+
+func DataEnsure(path string) (string, error) {
+	return xdg.Data.Ensure(filepath.Join(cmdName, path))
+}
 
 // DefaultSound returns the path to the default sound for a Notification
 func DefaultSound() string {
