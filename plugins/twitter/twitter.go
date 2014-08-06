@@ -39,11 +39,13 @@ const (
 	consolidatedStatusIndexStart        = maxIndividualStatuses
 	maxIndividualDirectMessages         = 2
 	consolidatedDirectMessageIndexStart = maxIndividualDirectMessages
+	twitterDispatchUrlBase              = "https://mobile.twitter.com"
 )
 
 type twitterPlugin struct {
 	lastMentionId       int64
 	lastDirectMessageId int64
+	bootstrap           bool
 }
 
 func New() plugins.Plugin {
@@ -109,7 +111,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 	for _, s := range statuses {
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
-		action := fmt.Sprintf("http://mobile.twitter.com/%s/statuses/%d", s.User.ScreenName, s.Id)
+		action := fmt.Sprintf("%s/%s/statuses/%d", twitterDispatchUrlBase, s.User.ScreenName, s.Id)
 		epoch := toEpoch(s.CreatedAt)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image, epoch))
 		if len(pushMsg) == maxIndividualStatuses {
@@ -126,7 +128,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 		summary := gettext.Gettext("Multiple more mentions")
 		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
-		action := "http://mobile.twitter.com/i/connect"
+		action := fmt.Sprintf("%s/i/connect", twitterDispatchUrlBase)
 		epoch := time.Now().Unix()
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
 	}
@@ -166,7 +168,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 	for _, m := range dms {
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
-		action := fmt.Sprintf("http://mobile.twitter.com/%s/messages", m.Sender.ScreenName)
+		action := fmt.Sprintf("%s/%s/messages", twitterDispatchUrlBase, m.Sender.ScreenName)
 		epoch := toEpoch(m.CreatedAt)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image, epoch))
 		if len(pushMsg) == maxIndividualDirectMessages {
@@ -183,7 +185,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 		summary := gettext.Gettext("Multiple direct messages available")
 		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
-		action := "http://mobile.twitter.com/messages"
+		action := fmt.Sprintf("%s/messages", twitterDispatchUrlBase)
 		epoch := time.Now().Unix()
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
 	}
@@ -215,6 +217,10 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 	dms, err := p.parseDirectMessages(resp)
 	if err != nil {
 		return
+	}
+	if !p.bootstrap {
+		p.bootstrap = true
+		return nil, nil
 	}
 	messages = append(messages, dms...)
 	return
