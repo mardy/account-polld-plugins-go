@@ -19,9 +19,13 @@ package facebook
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
+
+	"log"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
@@ -83,12 +87,16 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	latestUpdate := ""
 	for _, n := range result.Data {
 		if n.UpdatedTime <= p.lastUpdate {
+			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
+			continue
+		} else if n.Unread != 1 {
+			log.Println("facebook plugin: skipping notification", n.Id, "as it's read:", n.Unread)
 			continue
 		}
 		// TODO proper action needed
-		action := "https://m.facebook.com"
+		//action := "https://m.facebook.com"
 		epoch := toEpoch(n.UpdatedTime)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.Title, "", action, "", epoch))
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, n.picture(), epoch))
 		if n.UpdatedTime > latestUpdate {
 			latestUpdate = n.UpdatedTime
 		}
@@ -98,6 +106,10 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 }
 
 func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+	// This envvar check is to ease testing.
+	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_FACEBOOK"); token != "" {
+		authData.AccessToken = token
+	}
 	resp, err := p.request(authData, "me/notifications")
 	if err != nil {
 		return nil, err
@@ -133,6 +145,18 @@ type notification struct {
 	Application object `json:"application"`
 	Unread      int    `json:"unread"`
 	Object      object `json:"object"`
+}
+
+func (n notification) picture() string {
+	u, err := baseUrl.Parse(fmt.Sprintf("%s/picture", n.From.Id))
+	if err != nil {
+		log.Println("facebook plugin: cannot get picture for", n.Id)
+		return ""
+	}
+	query := u.Query()
+	query.Add("redirect", "true")
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 type object struct {
