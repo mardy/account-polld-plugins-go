@@ -23,15 +23,21 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"log"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 )
 
-const facebookTime = "2006-01-02T15:04:05-0700"
+const (
+	facebookTime                        = "2006-01-02T15:04:05-0700"
+	maxIndividualNotifications          = 4
+	consolidatedNotificationsIndexStart = maxIndividualNotifications
+)
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
@@ -79,6 +85,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	// page full of notifications.  The default limit seems to be
 	// 5000 though, which we are unlikely to hit, since
 	// notifications are deleted once read.
+	// TODO filter out of date messages before operating
 	var result notificationDoc
 	if err := decoder.Decode(&result); err != nil {
 		return nil, err
@@ -94,13 +101,49 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 			continue
 		}
 		// TODO proper action needed
-		//action := "https://m.facebook.com"
 		epoch := toEpoch(n.UpdatedTime)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, n.picture(), epoch))
 		if n.UpdatedTime > latestUpdate {
+			fmt.Println(latestUpdate)
 			latestUpdate = n.UpdatedTime
 		}
+		if len(pushMsg) == maxIndividualNotifications {
+			break
+		}
 	}
+	// Now we consolidate the remaining statuses
+	if len(result.Data) > len(pushMsg) && len(result.Data) >= consolidatedNotificationsIndexStart {
+		usernamesMap := make(map[string]bool)
+		for _, n := range result.Data[consolidatedNotificationsIndexStart:] {
+			if n.UpdatedTime <= p.lastUpdate {
+				log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
+				continue
+			}
+			if _, ok := usernamesMap[n.From.Name]; !ok {
+				usernamesMap[n.From.Name] = true
+			}
+			if n.UpdatedTime > latestUpdate {
+				latestUpdate = n.UpdatedTime
+			}
+		}
+		usernames := []string{}
+		for k, _ := range usernamesMap {
+			usernames = append(usernames, k)
+			// we don't too many usernames listed, this is a hard number
+			if len(usernames) > 10 {
+				usernames = append(usernames, "...")
+				break
+			}
+		}
+		// TRANSLATORS: This represents a notification summary about more facebook notifications
+		summary := gettext.Gettext("Multiple more notifications")
+		// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
+		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
+		action := "https://m.facebook.com"
+		epoch := time.Now().Unix()
+		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
+	}
+
 	p.lastUpdate = latestUpdate
 	return pushMsg, nil
 }
