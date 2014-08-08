@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,24 +38,23 @@ const (
 	facebookTime                        = "2006-01-02T15:04:05-0700"
 	maxIndividualNotifications          = 4
 	consolidatedNotificationsIndexStart = maxIndividualNotifications
+	pluginName                          = "facebook"
 )
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
-var persistPath = filepath.Join("facebook", "timestamp.json")
-
 type timeStamp string
 
-func (stamp timeStamp) persist() (err error) {
-	err = plugins.Persist(persistPath, stamp)
+func (stamp timeStamp) persist(accountId uint) (err error) {
+	err = plugins.Persist(pluginName, accountId, stamp)
 	if err != nil {
-		log.Println("facebook plugin: failed to save state:", err)
+		log.Print("facebook plugin", accountId, ": failed to save state: ", err)
 	}
 	return nil
 }
 
-func timeStampFromStorage() (stamp timeStamp, err error) {
-	err = plugins.FromPersist(persistPath, &stamp)
+func timeStampFromStorage(accountId uint) (stamp timeStamp, err error) {
+	err = plugins.FromPersist(pluginName, accountId, &stamp)
 	if err != nil {
 		return stamp, err
 	}
@@ -68,16 +66,17 @@ func timeStampFromStorage() (stamp timeStamp, err error) {
 
 type fbPlugin struct {
 	lastUpdate timeStamp
+	accountId  uint
 }
 
-func New() plugins.Plugin {
-	stamp, err := timeStampFromStorage()
+func New(accountId uint) plugins.Plugin {
+	stamp, err := timeStampFromStorage(accountId)
 	if err != nil {
-		log.Println("facebook plugin: cannot load previous state from storage:", err)
+		log.Print("facebook plugin ", accountId, ": cannot load previous state from storage: ", err)
 	} else {
-		log.Println("facebook plugin: last state loaded from storage")
+		log.Print("facebook plugin ", accountId, ": last state loaded from storage")
 	}
-	return &fbPlugin{stamp}
+	return &fbPlugin{lastUpdate: stamp, accountId: accountId}
 }
 
 func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
@@ -147,7 +146,8 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 		usernamesMap := make(map[string]bool)
 		for _, n := range result.Data[consolidatedNotificationsIndexStart:] {
 			if n.UpdatedTime <= p.lastUpdate {
-				log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
+				log.Print("facebook plugin ", p.accountId, ": skipping notification ",
+					n.Id, " as ", n.UpdatedTime, " is older than ", p.lastUpdate)
 				continue
 			}
 			if _, ok := usernamesMap[n.From.Name]; !ok {
@@ -176,7 +176,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	}
 
 	p.lastUpdate = latestUpdate
-	p.lastUpdate.persist()
+	p.lastUpdate.persist(p.accountId)
 	return pushMsg, nil
 }
 

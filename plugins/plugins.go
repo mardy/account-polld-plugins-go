@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -169,14 +170,16 @@ var ErrTokenExpired = errors.New("Token expired")
 
 var cmdName string
 
-func Persist(pluginStorePath string, data interface{}) (err error) {
+// Persist stores the plugins data in a common location to a json file
+// from which it can recover later
+func Persist(pluginName string, accountId uint, data interface{}) (err error) {
 	var p string
 	defer func() {
 		if err != nil && p != "" {
 			os.Remove(p)
 		}
 	}()
-	p, err = DataEnsure(pluginStorePath)
+	p, err = xdg.Data.Ensure(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
 	if err != nil {
 		return err
 	}
@@ -194,7 +197,9 @@ func Persist(pluginStorePath string, data interface{}) (err error) {
 	return nil
 }
 
-func FromPersist(pluginStorePath string, data interface{}) (err error) {
+// FromPersist restores the plugins data from a common location which
+// was stored in a json file
+func FromPersist(pluginName string, accountId uint, data interface{}) (err error) {
 	if reflect.ValueOf(data).Kind() != reflect.Ptr {
 		return errors.New("decode target is not a pointer")
 	}
@@ -206,7 +211,7 @@ func FromPersist(pluginStorePath string, data interface{}) (err error) {
 			}
 		}
 	}()
-	p, err = DataFind(pluginStorePath)
+	p, err = xdg.Data.Find(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
 	if err != nil {
 		return err
 	}
@@ -221,14 +226,6 @@ func FromPersist(pluginStorePath string, data interface{}) (err error) {
 	}
 
 	return nil
-}
-
-func DataFind(path string) (string, error) {
-	return xdg.Data.Find(filepath.Join(cmdName, path))
-}
-
-func DataEnsure(path string) (string, error) {
-	return xdg.Data.Ensure(filepath.Join(cmdName, path))
 }
 
 // DefaultSound returns the path to the default sound for a Notification
