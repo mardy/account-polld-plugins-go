@@ -21,9 +21,11 @@ package facebook
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -42,12 +44,63 @@ const (
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
+var timeStampStoreSubPath = filepath.Join("facebook", "timestamp")
+
+type timeStamp string
+
+func (stamp timeStamp) persist() (err error) {
+	var p string
+	defer func() {
+		if err != nil {
+			log.Println("facebook plugin: failed to save state:", err)
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = plugins.DataEnsure(timeStampStoreSubPath)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(p, []byte(stamp), 0600)
+}
+
+func timeStampFromStorage() (stamp timeStamp, err error) {
+	var p string
+	defer func() {
+		if err != nil {
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = plugins.DataFind(timeStampStoreSubPath)
+	if err != nil {
+		return stamp, err
+	}
+	s, err := ioutil.ReadFile(p)
+	if err != nil {
+		return stamp, err
+	}
+	if _, err := time.Parse(facebookTime, string(s)); err == nil {
+		log.Println("facebook plugin: failed to retrieve latest timestamp:", err)
+		return stamp, err
+	}
+	return timeStamp(s), nil
+}
+
 type fbPlugin struct {
-	lastUpdate string
+	lastUpdate timeStamp
 }
 
 func New() plugins.Plugin {
-	return &fbPlugin{}
+	stamp, err := timeStampFromStorage()
+	if err != nil {
+		log.Println("facebook plugin: cannot load previous state from storage:", err)
+	} else {
+		log.Println("facebook plugin: report state loaded from storage")
+	}
+	return &fbPlugin{stamp}
 }
 
 func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
@@ -92,7 +145,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 		return nil, err
 	}
 	pushMsg := []plugins.PushMessage{}
-	latestUpdate := ""
+	var latestUpdate timeStamp
 	for _, n := range result.Data {
 		if n.UpdatedTime <= p.lastUpdate {
 			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
@@ -146,6 +199,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	}
 
 	p.lastUpdate = latestUpdate
+	p.lastUpdate.persist()
 	return pushMsg, nil
 }
 
@@ -161,8 +215,8 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, err
 	return p.parseResponse(resp)
 }
 
-func toEpoch(timestamp string) int64 {
-	if t, err := time.Parse(facebookTime, timestamp); err == nil {
+func toEpoch(stamp timeStamp) int64 {
+	if t, err := time.Parse(facebookTime, string(stamp)); err == nil {
 		return t.Unix()
 	}
 	return time.Now().Unix()
@@ -179,16 +233,16 @@ type notificationDoc struct {
 }
 
 type notification struct {
-	Id          string `json:"id"`
-	From        object `json:"from"`
-	To          object `json:"to"`
-	CreatedTime string `json:"created_time"`
-	UpdatedTime string `json:"updated_time"`
-	Title       string `json:"title"`
-	Link        string `json:"link"`
-	Application object `json:"application"`
-	Unread      int    `json:"unread"`
-	Object      object `json:"object"`
+	Id          string    `json:"id"`
+	From        object    `json:"from"`
+	To          object    `json:"to"`
+	CreatedTime timeStamp `json:"created_time"`
+	UpdatedTime timeStamp `json:"updated_time"`
+	Title       string    `json:"title"`
+	Link        string    `json:"link"`
+	Application object    `json:"application"`
+	Unread      int       `json:"unread"`
+	Object      object    `json:"object"`
 }
 
 func (n notification) picture() string {

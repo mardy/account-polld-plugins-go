@@ -137,7 +137,7 @@ func (s S) TestParseNotifications(c *C) {
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
-	c.Check(p.lastUpdate, Equals, "2014-07-12T09:51:57+0000")
+	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
 func (s S) TestIgnoreOldNotifications(c *C) {
@@ -151,7 +151,7 @@ func (s S) TestIgnoreOldNotifications(c *C) {
 	c.Assert(len(messages), Equals, 1)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
-	c.Check(p.lastUpdate, Equals, "2014-07-12T09:51:57+0000")
+	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
 func (s S) TestErrorResponse(c *C) {
