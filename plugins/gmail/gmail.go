@@ -18,7 +18,6 @@
 package gmail
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -53,7 +52,7 @@ var timeDelta = time.Duration(time.Hour * 24)
 // trackDelta defines how old messages can be before removed from tracking
 var trackDelta = time.Duration(time.Hour * 24 * 7)
 
-var idStoreSubPath = filepath.Join("gmail", "reportedIds.json")
+var persistPath = filepath.Join("gmail", "reportedIds.json")
 
 type GmailPlugin struct {
 	// reportedIds holds the messages that have already been notified. This
@@ -62,29 +61,11 @@ type GmailPlugin struct {
 	reportedIds reportedIdMap
 }
 
-func idsFromStorage() (ids reportedIdMap, err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataFind(idStoreSubPath)
+func idsFromPersist() (ids reportedIdMap, err error) {
+	err = plugins.FromPersist(persistPath, &ids)
 	if err != nil {
 		return nil, err
 	}
-	file, err := os.Open(p)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	jsonReader := json.NewDecoder(file)
-	if err := jsonReader.Decode(&ids); err != nil {
-		return nil, err
-	}
-
 	// discard old ids
 	timestamp := time.Now()
 	for k, v := range ids {
@@ -98,40 +79,19 @@ func idsFromStorage() (ids reportedIdMap, err error) {
 }
 
 func (ids reportedIdMap) persist() (err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			log.Println("gmail plugin: failed to save state:", err)
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataEnsure(idStoreSubPath)
+	err = plugins.Persist(persistPath, ids)
 	if err != nil {
-		return err
+		log.Println("gmail plugin: failed to save state:", err)
 	}
-	file, err := os.Create(p)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	defer w.Flush()
-	jsonWriter := json.NewEncoder(w)
-	if err := jsonWriter.Encode(ids); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func New() *GmailPlugin {
-	reportedIds, err := idsFromStorage()
+	reportedIds, err := idsFromPersist()
 	if err != nil {
 		log.Println("gmail plugin: cannot load previous state from storage:", err)
 	} else {
-		log.Println("gmail plugin: report state loaded from storage")
+		log.Println("gmail plugin: last state loaded from storage")
 	}
 	return &GmailPlugin{reportedIds}
 }

@@ -21,7 +21,6 @@ package facebook
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,49 +43,27 @@ const (
 
 var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
-var timeStampStoreSubPath = filepath.Join("facebook", "timestamp")
+var persistPath = filepath.Join("facebook", "timestamp.json")
 
 type timeStamp string
 
 func (stamp timeStamp) persist() (err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			log.Println("facebook plugin: failed to save state:", err)
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataEnsure(timeStampStoreSubPath)
+	err = plugins.Persist(persistPath, stamp)
 	if err != nil {
-		return err
+		log.Println("facebook plugin: failed to save state:", err)
 	}
-	return ioutil.WriteFile(p, []byte(stamp), 0600)
+	return nil
 }
 
 func timeStampFromStorage() (stamp timeStamp, err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataFind(timeStampStoreSubPath)
+	err = plugins.FromPersist(persistPath, &stamp)
 	if err != nil {
 		return stamp, err
 	}
-	s, err := ioutil.ReadFile(p)
-	if err != nil {
+	if _, err := time.Parse(facebookTime, string(stamp)); err == nil {
 		return stamp, err
 	}
-	if _, err := time.Parse(facebookTime, string(s)); err == nil {
-		log.Println("facebook plugin: failed to retrieve latest timestamp:", err)
-		return stamp, err
-	}
-	return timeStamp(s), nil
+	return stamp, nil
 }
 
 type fbPlugin struct {
@@ -98,7 +75,7 @@ func New() plugins.Plugin {
 	if err != nil {
 		log.Println("facebook plugin: cannot load previous state from storage:", err)
 	} else {
-		log.Println("facebook plugin: report state loaded from storage")
+		log.Println("facebook plugin: last state loaded from storage")
 	}
 	return &fbPlugin{stamp}
 }

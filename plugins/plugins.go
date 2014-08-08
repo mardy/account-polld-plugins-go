@@ -18,9 +18,12 @@
 package plugins
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/go-xdg/v0"
@@ -165,6 +168,60 @@ const (
 var ErrTokenExpired = errors.New("Token expired")
 
 var cmdName string
+
+func Persist(pluginStorePath string, data interface{}) (err error) {
+	var p string
+	defer func() {
+		if err != nil && p != "" {
+			os.Remove(p)
+		}
+	}()
+	p, err = DataEnsure(pluginStorePath)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	w := bufio.NewWriter(file)
+	defer w.Flush()
+	jsonWriter := json.NewEncoder(w)
+	if err := jsonWriter.Encode(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func FromPersist(pluginStorePath string, data interface{}) (err error) {
+	if reflect.ValueOf(data).Kind() != reflect.Ptr {
+		return errors.New("decode target is not a pointer")
+	}
+	var p string
+	defer func() {
+		if err != nil {
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = DataFind(pluginStorePath)
+	if err != nil {
+		return err
+	}
+	file, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	jsonReader := json.NewDecoder(file)
+	if err := jsonReader.Decode(&data); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func DataFind(path string) (string, error) {
 	return xdg.Data.Find(filepath.Join(cmdName, path))
