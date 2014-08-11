@@ -18,14 +18,12 @@
 package gmail
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/mail"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -41,6 +39,7 @@ const (
 	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
 	// this means 3 individual messages + 1 bundled notification.
 	individualNotificationsLimit = 2
+	pluginName                   = "gmail"
 )
 
 type reportedIdMap map[string]time.Time
@@ -53,87 +52,47 @@ var timeDelta = time.Duration(time.Hour * 24)
 // trackDelta defines how old messages can be before removed from tracking
 var trackDelta = time.Duration(time.Hour * 24 * 7)
 
-var idStoreSubPath = filepath.Join("gmail", "reportedIds.json")
-
 type GmailPlugin struct {
 	// reportedIds holds the messages that have already been notified. This
 	// approach is taken against timestamps as it avoids needing to call
 	// get on the message.
 	reportedIds reportedIdMap
+	accountId   uint
 }
 
-func idsFromStorage() (ids reportedIdMap, err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataFind(idStoreSubPath)
+func idsFromPersist(accountId uint) (ids reportedIdMap, err error) {
+	err = plugins.FromPersist(pluginName, accountId, &ids)
 	if err != nil {
 		return nil, err
 	}
-	file, err := os.Open(p)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	jsonReader := json.NewDecoder(file)
-	if err := jsonReader.Decode(&ids); err != nil {
-		return nil, err
-	}
-
 	// discard old ids
 	timestamp := time.Now()
 	for k, v := range ids {
 		delta := timestamp.Sub(v)
 		if delta > trackDelta {
-			log.Println("gmail plugin: deleting", k, "as", delta, "is greater than", trackDelta)
+			log.Print("gmail plugin ", accountId, ": deleting ", k, " as ", delta, " is greater than ", trackDelta)
 			delete(ids, k)
 		}
 	}
 	return ids, nil
 }
 
-func (ids reportedIdMap) persist() (err error) {
-	var p string
-	defer func() {
-		if err != nil {
-			log.Println("gmail plugin: failed to save state:", err)
-			if p != "" {
-				os.Remove(p)
-			}
-		}
-	}()
-	p, err = plugins.DataEnsure(idStoreSubPath)
+func (ids reportedIdMap) persist(accountId uint) (err error) {
+	err = plugins.Persist(pluginName, accountId, ids)
 	if err != nil {
-		return err
+		log.Print("gmail plugin ", accountId, ": failed to save state: ", err)
 	}
-	file, err := os.Create(p)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	w := bufio.NewWriter(file)
-	defer w.Flush()
-	jsonWriter := json.NewEncoder(w)
-	if err := jsonWriter.Encode(ids); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func New() *GmailPlugin {
-	reportedIds, err := idsFromStorage()
+func New(accountId uint) *GmailPlugin {
+	reportedIds, err := idsFromPersist(accountId)
 	if err != nil {
-		log.Println("gmail plugin: cannot load previous state from storage:", err)
+		log.Print("gmail plugin ", accountId, ": cannot load previous state from storage: ", err)
 	} else {
-		log.Println("gmail plugin: report state loaded from storage")
+		log.Print("gmail plugin ", accountId, ": last state loaded from storage")
 	}
-	return &GmailPlugin{reportedIds}
+	return &GmailPlugin{reportedIds: reportedIds, accountId: accountId}
 }
 
 func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
@@ -202,7 +161,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			epoch := hdr.getEpoch()
 			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 		} else {
-			log.Println("gmail: skipping message id", msg.Id, "with date", msgStamp, "older than", timeDelta)
+			log.Print("gmail plugin ", p.accountId, ": skipping message id ", msg.Id, " with date ", msgStamp, " older than ", timeDelta)
 		}
 	}
 	var pushMsg []plugins.PushMessage
@@ -268,7 +227,7 @@ func (p *GmailPlugin) messageListFilter(messages []message) []message {
 		ids[msg.Id] = time.Now()
 	}
 	p.reportedIds = ids
-	p.reportedIds.persist()
+	p.reportedIds.persist(p.accountId)
 	return reportMsg
 }
 
