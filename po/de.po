@@ -8,13 +8,13 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-06 10:04-0300\n"
-"PO-Revision-Date: 2014-08-09 14:18+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2014-08-10 13:39+0000\n"
+"Last-Translator: Miguel Guse <gusemiguel@gmail.com>\n"
 "Language-Team: German <de@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-08-10 06:07+0000\n"
+"X-Launchpad-Export-Date: 2014-08-11 06:36+0000\n"
 "X-Generator: Launchpad (build 17156)\n"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
@@ -32,7 +32,7 @@ msgstr ""
 #: plugins/twitter/twitter.go:130 plugins/twitter/twitter.go:187
 #, c-format
 msgid "From %s"
-msgstr ""
+msgstr "Von %s"
 
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:185
@@ -43,13 +43,13 @@ msgstr ""
 #: plugins/gmail/gmail.go:116
 #, c-format
 msgid ", %s"
-msgstr ""
+msgstr ", %s"
 
 #. TRANSLATORS: the %s is the "from" header corresponding to a specific email
 #: plugins/gmail/gmail.go:119
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #. TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 #: plugins/gmail/gmail.go:121
@@ -58,6 +58,8 @@ msgid ""
 "%s\n"
 "%s"
 msgstr ""
+"%s\n"
+"%s"
 
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:139
@@ -72,7 +74,7 @@ msgstr ""
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr ""
+msgstr "Benachrichtigungen"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
