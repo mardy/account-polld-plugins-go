@@ -120,41 +120,40 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	if err := decoder.Decode(&result); err != nil {
 		return nil, err
 	}
-	pushMsg := []plugins.PushMessage{}
-	var latestUpdate timeStamp
+
+	var validNotifications []notification
+	latestUpdate := p.lastUpdate
 	for _, n := range result.Data {
 		if n.UpdatedTime <= p.lastUpdate {
 			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
-			continue
 		} else if n.Unread != 1 {
 			log.Println("facebook plugin: skipping notification", n.Id, "as it's read:", n.Unread)
-			continue
+		} else {
+			log.Println("facebook plugin: valid notification", n.Id, "dated:", n.UpdatedTime, "and read status:", n.Unread)
+			validNotifications = append(validNotifications, n)
+			if n.UpdatedTime > latestUpdate {
+				latestUpdate = n.UpdatedTime
+			}
 		}
-		// TODO proper action needed
+	}
+	p.lastUpdate = latestUpdate
+	p.lastUpdate.persist(p.accountId)
+
+	pushMsg := []plugins.PushMessage{}
+	for _, n := range validNotifications {
 		epoch := toEpoch(n.UpdatedTime)
 		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, n.picture(), epoch))
-		if n.UpdatedTime > latestUpdate {
-			fmt.Println(latestUpdate)
-			latestUpdate = n.UpdatedTime
-		}
 		if len(pushMsg) == maxIndividualNotifications {
 			break
 		}
 	}
+
 	// Now we consolidate the remaining statuses
-	if len(result.Data) > len(pushMsg) && len(result.Data) >= consolidatedNotificationsIndexStart {
+	if len(validNotifications) > len(pushMsg) && len(validNotifications) >= consolidatedNotificationsIndexStart {
 		usernamesMap := make(map[string]bool)
 		for _, n := range result.Data[consolidatedNotificationsIndexStart:] {
-			if n.UpdatedTime <= p.lastUpdate {
-				log.Print("facebook plugin ", p.accountId, ": skipping notification ",
-					n.Id, " as ", n.UpdatedTime, " is older than ", p.lastUpdate)
-				continue
-			}
 			if _, ok := usernamesMap[n.From.Name]; !ok {
 				usernamesMap[n.From.Name] = true
-			}
-			if n.UpdatedTime > latestUpdate {
-				latestUpdate = n.UpdatedTime
 			}
 		}
 		usernames := []string{}
@@ -166,17 +165,17 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 				break
 			}
 		}
-		// TRANSLATORS: This represents a notification summary about more facebook notifications
-		summary := gettext.Gettext("Multiple more notifications")
-		// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
-		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
-		action := "https://m.facebook.com"
-		epoch := time.Now().Unix()
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
+		if len(usernames) > 0 {
+			// TRANSLATORS: This represents a notification summary about more facebook notifications
+			summary := gettext.Gettext("Multiple more notifications")
+			// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
+			body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
+			action := "https://m.facebook.com"
+			epoch := time.Now().Unix()
+			pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
+		}
 	}
 
-	p.lastUpdate = latestUpdate
-	p.lastUpdate.persist(p.accountId)
 	return pushMsg, nil
 }
 
