@@ -8,13 +8,13 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-11 15:35-0300\n"
-"PO-Revision-Date: 2014-08-04 13:49+0000\n"
-"Last-Translator: Rafael Neri <Unknown>\n"
+"PO-Revision-Date: 2014-08-13 04:49+0000\n"
+"Last-Translator: Tiago Hillebrandt <tiagohillebrandt@gmail.com>\n"
 "Language-Team: Brazilian Portuguese <pt_BR@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-08-12 06:47+0000\n"
+"X-Launchpad-Export-Date: 2014-08-13 06:58+0000\n"
 "X-Generator: Launchpad (build 17156)\n"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
@@ -81,7 +81,7 @@ msgstr ""
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr ""
+msgstr "Notificações"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
@@ -89,4 +89,4 @@ msgstr ""
 
 #: data/account-polld.application.tr.h:2
 msgid "Receive notifications for this account"
-msgstr ""
+msgstr "Receber notificações para esta conta"
