@@ -1,4 +1,4 @@
-# Slovenian translation for account-polld
+# Khmer translation for account-polld
 # Copyright (c) 2014 Rosetta Contributors and Canonical Ltd 2014
 # This file is distributed under the same license as the account-polld package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2014.
@@ -8,9 +8,9 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-11 15:35-0300\n"
-"PO-Revision-Date: 2014-08-19 13:18+0000\n"
-"Last-Translator: Damir Jerovšek <Unknown>\n"
-"Language-Team: Slovenian <sl@li.org>\n"
+"PO-Revision-Date: 2014-08-20 03:55+0000\n"
+"Last-Translator: Sok Sophea <sksophea@gmail.com>\n"
+"Language-Team: Khmer <km@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -26,7 +26,7 @@ msgstr "%s. @%s"
 #. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:128
 msgid "Multiple more mentions"
-msgstr "Večje število omemb"
+msgstr "ការ​ពិភាក្សា​ច្រើន​ទៀត"
 
 #. TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 #. TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -34,12 +34,12 @@ msgstr "Večje število omemb"
 #: plugins/facebook/facebook.go:172
 #, c-format
 msgid "From %s"
-msgstr "Od %s"
+msgstr "ពី %s"
 
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:185
 msgid "Multiple direct messages available"
-msgstr "Na voljo je večje število neposrednih sporočil"
+msgstr "មាន​សារ​ផ្ទាល់​ច្រើន"
 
 #. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 #: plugins/gmail/gmail.go:153
@@ -66,27 +66,27 @@ msgstr ""
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:176
 msgid "More unread emails available"
-msgstr "Na voljo je več neprebrane e-pošte"
+msgstr "មាន​អ៊ីមែល​មិន​បាន​អាន​ច្រើន​ទៀត"
 
 #. TRANSLATORS: the first %d refers to approximate additionl email message count
 #: plugins/gmail/gmail.go:180
 #, c-format
 msgid "You have an approximate of %d additional unread messages"
-msgstr "Imate približno %d dodatnih neprebranih sporočil"
+msgstr "អ្នក​មាន​សារ​ដែល​មិន​បាន​អាន​ប្រហែល %d"
 
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:170
 msgid "Multiple more notifications"
-msgstr "Več obvestil"
+msgstr "ការ​ជូនដំណឹង​ច្រើន​ទៀត"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr "Obvestila"
+msgstr "ការ​ជូនដំណឹង"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
-msgstr "Izpraševanje računa"
+msgstr "ការ​ស្ទង់​មតិ​គណនី"
 
 #: data/account-polld.application.tr.h:2
 msgid "Receive notifications for this account"
-msgstr "Prejmi obvestila za ta račun"
+msgstr "ទទួល​ការ​ជូនដំណឹង​សម្រាប់​គណនី​នេះ"
