@@ -19,8 +19,6 @@ package main
 
 import (
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"launchpad.net/account-polld/accounts"
@@ -40,17 +38,10 @@ type AccountManager struct {
 }
 
 var (
-	pollTimeout = time.Duration(30 * time.Second)
-	maxCounter  = 4
+	pollTimeout          = time.Duration(30 * time.Second)
+	bootstrapPollTimeout = time.Duration(5 * time.Minute)
+	maxCounter           = 4
 )
-
-func init() {
-	if intervalEnv := os.Getenv("ACCOUNT_POLLD_POLL_TIMEOUT_MINUTES"); intervalEnv != "" {
-		if interval, err := strconv.ParseInt(intervalEnv, 0, 0); err == nil {
-			pollTimeout = time.Duration(interval) * time.Minute
-		}
-	}
-}
 
 func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
@@ -82,7 +73,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	}
 	timeout := pollTimeout
 	if bootstrap {
-		timeout *= 5
+		timeout = bootstrapPollTimeout
 	}
 
 	log.Printf("Starting poll for account %d", a.authData.AccountId)
