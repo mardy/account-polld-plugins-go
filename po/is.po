@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-11 15:35-0300\n"
-"PO-Revision-Date: 2014-08-08 08:42+0000\n"
+"PO-Revision-Date: 2014-08-21 10:52+0000\n"
 "Last-Translator: Sveinn í Felli <sv1@fellsnet.is>\n"
 "Language-Team: Icelandic <is@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-08-12 06:47+0000\n"
-"X-Generator: Launchpad (build 17156)\n"
+"X-Launchpad-Export-Date: 2014-08-22 08:18+0000\n"
+"X-Generator: Launchpad (build 17163)\n"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:113 plugins/twitter/twitter.go:170
@@ -77,7 +77,7 @@ msgstr "Til viðbótar eru um það bil %d ólesnir tölvupóstar"
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:170
 msgid "Multiple more notifications"
-msgstr ""
+msgstr "Fleiri tilkynningar"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
