@@ -23,6 +23,7 @@
 #include <QContactAvatar>
 #include <QCoreApplication>
 #include <QScopedPointer>
+#include <QDebug>
 #include <QTimer>
 #include <thread>
 
@@ -44,12 +45,14 @@ int mainloopStart() {
     static int argc = 1;
 
     QCoreApplication mApp(argc, argv);
+    qDebug() << "Starting mainloop";
     return mApp.exec();
 }
 
 void getAvatar(char *email) {
     QScopedPointer<Avatar> avatar(new Avatar());
-    avatar->getThumbnail(email);
+    qDebug() << "Calling Avatar::getThumbnail";
+    avatar->retrieveThumbnail(QString(email));
 }
 
 void Avatar::getThumbnail(char *email) {
@@ -57,20 +60,25 @@ void Avatar::getThumbnail(char *email) {
     _signalMapper->setMapping(this, QString(email));
 
     QTimer::singleShot(0, this, SLOT(emitSignals()));
+    QCoreApplication::instance()->processEvents();
+    qDebug() << "Called processEvents";
 }
 
 
 void Avatar::emitSignals() {
+    qDebug("Got emitSignals");
     emit readyToRetrieve();
 }
 
 void Avatar::retrieveThumbnail(const QString& email) {
+    qDebug() << "Entering Avatar::retrieveThumbnail";
     QString avatar;
 
     QContactManager manager ("galera");
     QContactDetailFilter filter(QContactEmailAddress::match(email));
     QList<QContact> contacts = manager.contacts(filter);
     if(contacts.size() > 0) {
+        qDebug() << "Result > 0";
         avatar = contacts[0].detail<QContactAvatar>().imageUrl().path();
     }
 

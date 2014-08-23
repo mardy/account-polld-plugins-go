@@ -24,6 +24,7 @@ package qtcontact
 import "C"
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -58,7 +59,8 @@ func GetAvatar(emailAddress string) string {
 	C.getAvatar(C.CString(emailAddress))
 
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(3 * time.Second):
+		log.Println("Timeout while seeking avatar for", emailAddress)
 		return ""
 	case path := <-avatarPathChan:
 		return path

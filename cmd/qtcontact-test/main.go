@@ -25,6 +25,8 @@ import (
 )
 
 func main() {
+	qtcontact.MainLoopStart()
+
 	if len(os.Args) != 2 {
 		fmt.Println("usage:", os.Args[0], "[email address]")
 		os.Exit(1)
