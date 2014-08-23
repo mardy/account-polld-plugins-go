@@ -19,11 +19,15 @@ package gmail
 
 import (
 	"fmt"
+	"time"
 
 	"launchpad.net/account-polld/plugins"
 )
 
+const gmailTime = "Mon, 2 Jan 2006 15:04:05 -0700"
+
 type pushes map[string]plugins.PushMessage
+type headers map[string]string
 
 // messageList holds a response to call to Users.messages: list
 // defined in https://developers.google.com/gmail/api/v1/reference/users/messages/list
@@ -71,12 +75,28 @@ type payload struct {
 	Headers []messageHeader `json:"headers"`
 }
 
-func (p *payload) mapHeaders() map[string]string {
+func (p *payload) mapHeaders() headers {
 	headers := make(map[string]string)
 	for _, hdr := range p.Headers {
 		headers[hdr.Name] = hdr.Value
 	}
 	return headers
+}
+
+func (hdr headers) getTimestamp() time.Time {
+	timestamp, ok := hdr[hdrDATE]
+	if !ok {
+		return time.Now()
+	}
+
+	if t, err := time.Parse(gmailTime, timestamp); err == nil {
+		return t
+	}
+	return time.Now()
+}
+
+func (hdr headers) getEpoch() int64 {
+	return hdr.getTimestamp().Unix()
 }
 
 // messageHeader represents the message headers.

@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: debhelper (>= 9),
                dh-golang,
+               dh-translations,
                golang-go,
                golang-go-dbus-dev,
                golang-go-xdg-dev,
@@ -29,3 +30,4 @@ Description: Poll daemon for notifications though the Ubuntu Push Client
  communicates with the postal service provided by the ubuntu push client
  to expose notifications for the click webapps for the aforementioned
  services.
+X-Ubuntu-Use-Langpack: yes

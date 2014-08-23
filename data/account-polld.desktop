@@ -6,5 +6,5 @@ Name=Notifications
 NoDisplay=true
 Terminal=false
 Type=Application
-Icon=intouch
+Icon=indicator-messages
 X-Ubuntu-Gettext-Domain=account-polld

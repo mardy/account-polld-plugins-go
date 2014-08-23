@@ -414,10 +414,16 @@ func (s S) TestParseStatuses(c *C) {
 	messages, err := p.parseStatuses(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 2)
-	c.Check(messages[0].Notification.Card.Summary, Equals, "@spode mentioned you")
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Andrew Spode Miller. @spode")
 	c.Check(messages[0].Notification.Card.Body, Equals, "@jasoncosta @themattharris Hey! Going to be in Frisco in October. Was hoping to have a meeting to talk about @thinkwall if you're around?")
-	c.Check(messages[1].Notification.Card.Summary, Equals, "@mikedroid mentioned you")
+	c.Check(messages[0].Notification.Card.Icon, Equals, "http://a0.twimg.com/profile_images/1227466231/spode-balloon-medium_normal.jpg")
+	c.Assert(len(messages[0].Notification.Card.Actions), Equals, 1)
+	c.Check(messages[0].Notification.Card.Actions[0], Equals, "https://mobile.twitter.com/spode/statuses/242613977966850048")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "Mikey. @mikedroid")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Got the shirt @jasoncosta thanks man! Loving the #twitter bird on the shirt :-)")
+	c.Check(messages[1].Notification.Card.Icon, Equals, "http://a0.twimg.com/profile_images/1305509670/chatMikeTwitter_normal.png")
+	c.Assert(len(messages[1].Notification.Card.Actions), Equals, 1)
+	c.Check(messages[1].Notification.Card.Actions[0], Equals, "https://mobile.twitter.com/mikedroid/statuses/242534402280783873")
 	c.Check(p.lastMentionId, Equals, int64(242613977966850048))
 }
 
@@ -456,8 +462,11 @@ func (s S) TestParseDirectMessages(c *C) {
 	messages, err := p.parseDirectMessages(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 1)
-	c.Check(messages[0].Notification.Card.Summary, Equals, "@theSeanCook sent you a DM")
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Sean Cook. @theSeanCook")
 	c.Check(messages[0].Notification.Card.Body, Equals, "booyakasha")
+	c.Check(messages[0].Notification.Card.Icon, Equals, "http://a0.twimg.com/profile_images/1751506047/dead_sexy_normal.JPG")
+	c.Assert(len(messages[0].Notification.Card.Actions), Equals, 1)
+	c.Check(messages[0].Notification.Card.Actions[0], Equals, "https://mobile.twitter.com/theSeanCook/messages")
 	c.Check(p.lastDirectMessageId, Equals, int64(240136858829479936))
 }
 
