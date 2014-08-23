@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 void getAvatar(char *);
+int mainloopStart();
 
 #ifdef __cplusplus
 }

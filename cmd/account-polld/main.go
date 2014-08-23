@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"log"
 
@@ -29,6 +30,7 @@ import (
 	"launchpad.net/account-polld/plugins/facebook"
 	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/twitter"
+	"launchpad.net/account-polld/qtcontact"
 	"launchpad.net/go-dbus/v1"
 )
 
@@ -51,7 +53,16 @@ const (
 	POSTAL_OBJECT_PATH_PART = "/com/ubuntu/Postal/"
 )
 
+var mainLoopOnce sync.Once
+
 func init() {
+	startMainLoop()
+}
+
+func startMainLoop() {
+	mainLoopOnce.Do(func() {
+		go qtcontact.MainLoopStart()
+	})
 }
 
 func main() {

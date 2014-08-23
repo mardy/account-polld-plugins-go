@@ -38,6 +38,10 @@ func callback(path *C.char) {
 	avatarPathChan <- C.GoString(path)
 }
 
+func MainLoopStart() {
+	go C.mainloopStart()
+}
+
 // GetAvatar retrieves an avatar path for the specified email
 // address. Multiple calls to this func will be in sync
 func GetAvatar(emailAddress string) string {

@@ -50,17 +50,9 @@ type AuthData struct {
 }
 
 var (
-	mainLoopOnce     sync.Once
 	authChannels     = make(map[*C.AccountWatcher]chan<- AuthData)
 	authChannelsLock sync.Mutex
 )
-
-func startMainLoop() {
-	mainLoopOnce.Do(func() {
-		mainLoop := C.g_main_loop_new(nil, C.gboolean(1))
-		go C.g_main_loop_run(mainLoop)
-	})
-}
 
 // NewWatcher creates a new account watcher for the given service names
 func NewWatcher(serviceType string) *Watcher {
@@ -74,8 +66,6 @@ func NewWatcher(serviceType string) *Watcher {
 	authChannelsLock.Lock()
 	authChannels[w.watcher] = ch
 	authChannelsLock.Unlock()
-
-	startMainLoop()
 
 	return w
 }
