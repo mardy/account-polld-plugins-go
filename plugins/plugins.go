@@ -18,14 +18,20 @@
 package plugins
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"reflect"
 
 	"launchpad.net/account-polld/accounts"
+	"launchpad.net/go-xdg/v0"
 )
 
 func init() {
-	cmdName = os.Args[0]
+	cmdName = filepath.Base(os.Args[0])
 }
 
 // Plugin is an interface which the plugins will adhere to for the poll
@@ -50,22 +56,24 @@ type ApplicationId string
 
 // NewStandardPushMessage creates a base Notification with common
 // components (members) setup.
-func NewStandardPushMessage(summary, body, action, icon string) *PushMessage {
-	return &PushMessage{
+func NewStandardPushMessage(summary, body, action, icon string, epoch int64) *PushMessage {
+	pm := &PushMessage{
 		Notification: Notification{
 			Card: &Card{
-				Summary: summary,
-				Body:    body,
-				Actions: []string{action},
-				Icon:    icon,
-				Popup:   true,
-				Persist: true,
+				Summary:   summary,
+				Body:      body,
+				Actions:   []string{action},
+				Icon:      icon,
+				Timestamp: epoch,
+				Popup:     true,
+				Persist:   true,
 			},
 			Sound:   DefaultSound(),
 			Vibrate: DefaultVibration(),
 			Tag:     cmdName,
 		},
 	}
+	return pm
 }
 
 // PushMessage represents a data structure to be sent over to the
@@ -112,6 +120,8 @@ type Card struct {
 	Icon string `json:"icon,omitempty"`
 	// Whether to show in notification centre.
 	Persist bool `json:"persist,omitempty"`
+	// Seconds since the unix epoch, useful for persistent cards.
+	Timestamp int64 `json:"Timestamp,omitempty"`
 }
 
 // Vibrate is part of a notification and represents the user haptic hints
@@ -160,10 +170,68 @@ var ErrTokenExpired = errors.New("Token expired")
 
 var cmdName string
 
+// Persist stores the plugins data in a common location to a json file
+// from which it can recover later
+func Persist(pluginName string, accountId uint, data interface{}) (err error) {
+	var p string
+	defer func() {
+		if err != nil && p != "" {
+			os.Remove(p)
+		}
+	}()
+	p, err = xdg.Data.Ensure(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	w := bufio.NewWriter(file)
+	defer w.Flush()
+	jsonWriter := json.NewEncoder(w)
+	if err := jsonWriter.Encode(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+// FromPersist restores the plugins data from a common location which
+// was stored in a json file
+func FromPersist(pluginName string, accountId uint, data interface{}) (err error) {
+	if reflect.ValueOf(data).Kind() != reflect.Ptr {
+		return errors.New("decode target is not a pointer")
+	}
+	var p string
+	defer func() {
+		if err != nil {
+			if p != "" {
+				os.Remove(p)
+			}
+		}
+	}()
+	p, err = xdg.Data.Find(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
+	if err != nil {
+		return err
+	}
+	file, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	jsonReader := json.NewDecoder(file)
+	if err := jsonReader.Decode(&data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DefaultSound returns the path to the default sound for a Notification
 func DefaultSound() string {
 	// path is searched within XDG_DATA_DIRS
-	return "sounds/ubuntu/notifications/Slick.ogg"
+	return "sounds/ubuntu/notifications/Blip.ogg"
 }
 
 // DefaultVibration returns a Vibrate with the default vibration
