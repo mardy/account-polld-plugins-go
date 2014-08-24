@@ -13,6 +13,9 @@ Build-Depends: debhelper (>= 9),
                libaccounts-glib-dev,
                libclick-0.4-dev,
                libsignon-glib-dev,
+               qt5-default,
+               qtbase5-dev,
+               qtpim5-dev,
 Standards-Version: 3.9.5
 Homepage: https://launchpad.net/account-polld
 Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/account-polld/trunk/files
