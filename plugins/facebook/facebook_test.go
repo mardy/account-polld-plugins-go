@@ -122,6 +122,92 @@ const (
   ]
 }
 `
+	inboxBody = `
+{
+  "data": [
+    {
+      "unread": 1, 
+      "unseen": 1, 
+      "id": "445809168892281", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892281_1408991972", 
+            "from": {
+              "id": "346217352202239", 
+              "name": "Pollod Magnifico"
+            }, 
+            "message": "Hola mundo!", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    },
+    {
+      "unread": 2, 
+      "unseen": 1, 
+      "id": "445809168892282", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892282_1408991973", 
+            "from": {
+              "id": "346217352202239", 
+              "name": "Pollitod Magnifico"
+            }, 
+            "message": "Hola!", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    },
+    {
+      "unread": 2, 
+      "unseen": 1, 
+      "id": "445809168892282", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892282_1408991973", 
+            "from": {
+              "id": "346217352202240", 
+              "name": "A Friend"
+            }, 
+            "message": "mellon", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    }
+
+
+  ], 
+  "paging": {
+    "previous": "https://graph.facebook.com/v2.0/270128826512416/inbox?fields=unread,unseen,comments.limit(1)&limit=25&since=1408991972&__paging_token=enc_Aey99ACSOyZqN_7I-yWLnY8K3dqu4wVsx-Th3kMHMTMQ5VPbQRPgCQiJps0II1QAXDAVzHplqPS8yNgq8Zs_G2aK", 
+    "next": "https://graph.facebook.com/v2.0/270128826512416/inbox?fields=unread,unseen,comments.limit(1)&limit=25&until=1408991972&__paging_token=enc_AewjHkk10NNjRCXJCoaP5hyf22kw-htwxsDaVOiLY-IiXxB99sKNGlfFFmkcG-VeMGUETI2agZGR_1IWP5W4vyPL"
+  }, 
+  "summary": {
+    "unseen_count": 0, 
+    "unread_count": 1, 
+    "updated_time": "2014-08-25T19:05:49+0000"
+  }
+}
+`
 )
 
 func (s S) TestParseNotifications(c *C) {
@@ -137,7 +223,7 @@ func (s S) TestParseNotifications(c *C) {
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
-	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+	c.Check(p.state.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
 func (s S) TestIgnoreOldNotifications(c *C) {
@@ -145,13 +231,13 @@ func (s S) TestIgnoreOldNotifications(c *C) {
 		StatusCode: http.StatusOK,
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
-	p := &fbPlugin{lastUpdate: "2014-07-08T06:17:52+0000"}
+	p := &fbPlugin{state: fbState{lastUpdate: "2014-07-08T06:17:52+0000"}}
 	messages, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 1)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
-	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+	c.Check(p.state.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
 func (s S) TestErrorResponse(c *C) {
@@ -177,4 +263,22 @@ func (s S) TestTokenExpiredErrorResponse(c *C) {
 	notifications, err := p.parseResponse(resp)
 	c.Check(notifications, IsNil)
 	c.Assert(err, Equals, plugins.ErrTokenExpired)
+}
+
+func (s S) TestParseInbox(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	p := &fbPlugin{}
+	messages, err := p.parseInboxResponse(resp)
+	c.Assert(err, IsNil)
+	c.Assert(len(messages), Equals, 3)
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Pollod Magnifico")
+	c.Check(messages[0].Notification.Card.Body, Equals, "Hola mundo!")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "Pollitod Magnifico")
+	c.Check(messages[1].Notification.Card.Body, Equals, "Hola!")
+	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more messages")
+	c.Check(messages[2].Notification.Card.Body, Equals, "From Pollitod Magnifico, A Friend")
+	c.Check(p.state.lastInboxUpdate, Equals, timeStamp("2014-08-25T18:39:32+0000"))
 }

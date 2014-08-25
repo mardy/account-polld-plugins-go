@@ -36,8 +36,10 @@ import (
 
 const (
 	facebookTime                        = "2006-01-02T15:04:05-0700"
-	maxIndividualNotifications          = 4
+	maxIndividualNotifications          = 2
 	consolidatedNotificationsIndexStart = maxIndividualNotifications
+	maxIndividualThreads                = 2
+	consolidatedThreadsIndexStart       = maxIndividualThreads
 	pluginName                          = "facebook"
 )
 
@@ -45,38 +47,46 @@ var baseUrl, _ = url.Parse("https://graph.facebook.com/v2.0/")
 
 type timeStamp string
 
-func (stamp timeStamp) persist(accountId uint) (err error) {
-	err = plugins.Persist(pluginName, accountId, stamp)
+func (state fbState) persist(accountId uint) (err error) {
+	err = plugins.Persist(pluginName, accountId, state)
 	if err != nil {
 		log.Print("facebook plugin", accountId, ": failed to save state: ", err)
 	}
 	return nil
 }
 
-func timeStampFromStorage(accountId uint) (stamp timeStamp, err error) {
-	err = plugins.FromPersist(pluginName, accountId, &stamp)
+func stateFromStorage(accountId uint) (state fbState, err error) {
+	err = plugins.FromPersist(pluginName, accountId, &state)
 	if err != nil {
-		return stamp, err
+		return state, err
 	}
-	if _, err := time.Parse(facebookTime, string(stamp)); err == nil {
-		return stamp, err
+	if _, err := time.Parse(facebookTime, string(state.lastUpdate)); err == nil {
+		return state, err
 	}
-	return stamp, nil
+	if _, err := time.Parse(facebookTime, string(state.lastInboxUpdate)); err == nil {
+		return state, err
+	}
+	return state, nil
+}
+
+type fbState struct {
+	lastUpdate      timeStamp `json:"lastNotificationUpdate"`
+	lastInboxUpdate timeStamp `json:"lastInboxUpdate"`
 }
 
 type fbPlugin struct {
-	lastUpdate timeStamp
-	accountId  uint
+	state     fbState
+	accountId uint
 }
 
 func New(accountId uint) plugins.Plugin {
-	stamp, err := timeStampFromStorage(accountId)
+	state, err := stateFromStorage(accountId)
 	if err != nil {
 		log.Print("facebook plugin ", accountId, ": cannot load previous state from storage: ", err)
 	} else {
 		log.Print("facebook plugin ", accountId, ": last state loaded from storage")
 	}
-	return &fbPlugin{lastUpdate: stamp, accountId: accountId}
+	return &fbPlugin{state: state, accountId: accountId}
 }
 
 func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
@@ -96,19 +106,26 @@ func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Resp
 	return http.Get(u.String())
 }
 
-func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
+func (p *fbPlugin) checkError(resp *http.Response, decoder *json.Decoder) error {
 	if resp.StatusCode != http.StatusOK {
 		var result errorDoc
 		if err := decoder.Decode(&result); err != nil {
-			return nil, err
+			return err
 		}
 		if result.Error.Code == 190 {
-			return nil, plugins.ErrTokenExpired
+			return plugins.ErrTokenExpired
 		}
-		return nil, &result.Error
+		return &result.Error
+	}
+	return nil
+}
+
+func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+	err := p.checkError(resp, decoder)
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO: Follow the "paging.next" link if we get more than one
@@ -122,10 +139,10 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	}
 
 	var validNotifications []notification
-	latestUpdate := p.lastUpdate
+	latestUpdate := p.state.lastUpdate
 	for _, n := range result.Data {
-		if n.UpdatedTime <= p.lastUpdate {
-			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.lastUpdate)
+		if n.UpdatedTime <= p.state.lastUpdate {
+			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.state.lastUpdate)
 		} else if n.Unread != 1 {
 			log.Println("facebook plugin: skipping notification", n.Id, "as it's read:", n.Unread)
 		} else {
@@ -136,13 +153,13 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 			}
 		}
 	}
-	p.lastUpdate = latestUpdate
-	p.lastUpdate.persist(p.accountId)
+	p.state.lastUpdate = latestUpdate
+	p.state.persist(p.accountId)
 
 	pushMsg := []plugins.PushMessage{}
 	for _, n := range validNotifications {
-		epoch := toEpoch(n.UpdatedTime)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, n.picture(), epoch))
+		msg := n.buildPushMessage()
+		pushMsg = append(pushMsg, *msg)
 		if len(pushMsg) == maxIndividualNotifications {
 			break
 		}
@@ -150,12 +167,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 
 	// Now we consolidate the remaining statuses
 	if len(validNotifications) > len(pushMsg) && len(validNotifications) >= consolidatedNotificationsIndexStart {
-		usernamesMap := make(map[string]bool)
-		for _, n := range result.Data[consolidatedNotificationsIndexStart:] {
-			if _, ok := usernamesMap[n.From.Name]; !ok {
-				usernamesMap[n.From.Name] = true
-			}
-		}
+		usernamesMap := result.getConsolidatedMessagesUsernames(consolidatedNotificationsIndexStart)
 		usernames := []string{}
 		for k, _ := range usernamesMap {
 			usernames = append(usernames, k)
@@ -166,16 +178,73 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 			}
 		}
 		if len(usernames) > 0 {
-			// TRANSLATORS: This represents a notification summary about more facebook notifications
-			summary := gettext.Gettext("Multiple more notifications")
-			// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
-			body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
-			action := "https://m.facebook.com"
-			epoch := time.Now().Unix()
-			pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
+			consolidatedMsg := result.getConsolidatedMessage(usernames)
+			pushMsg = append(pushMsg, *consolidatedMsg)
 		}
 	}
 
+	return pushMsg, nil
+}
+
+func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+	err := p.checkError(resp, decoder)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Follow the "paging.next" link, need to check what the default limit is, etc.
+	// TODO filter out of date messages before operating
+	var result inboxDoc
+	if err := decoder.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var validThreads []thread
+	latestUpdate := p.state.lastUpdate
+	for _, t := range result.Data {
+		if t.UpdatedTime <= p.state.lastUpdate || t.Unread == 0 || t.Unseen == 0 {
+			// already seen, move on
+			log.Println("facebook plugin: skipping seen thread:", t)
+		} else {
+			// process this thread
+			log.Println("facebook plugin: valid thread", t.Id, "dated:", t.UpdatedTime, "and read status:", t.Unread)
+			validThreads = append(validThreads, t)
+			if t.UpdatedTime > latestUpdate {
+				latestUpdate = t.UpdatedTime
+			}
+		}
+	}
+	p.state.lastInboxUpdate = latestUpdate
+	p.state.persist(p.accountId)
+
+	pushMsg := []plugins.PushMessage{}
+	for _, t := range validThreads {
+		msg := t.buildPushMessage()
+		pushMsg = append(pushMsg, *msg)
+		if len(pushMsg) == maxIndividualThreads {
+			break
+		}
+	}
+
+	// Now we consolidate the remaining statuses
+	if len(validThreads) > len(pushMsg) && len(validThreads) >= consolidatedThreadsIndexStart {
+		usernamesMap := result.getConsolidatedMessagesUsernames(consolidatedThreadsIndexStart)
+		usernames := []string{}
+		for _, v := range usernamesMap {
+			usernames = append(usernames, v)
+			// we don't too many usernames listed, this is a hard number
+			if len(usernames) > 10 {
+				usernames = append(usernames, "...")
+				break
+			}
+		}
+		if len(usernames) > 0 {
+			consolidatedMsg := result.getConsolidatedMessage(usernames)
+			pushMsg = append(pushMsg, *consolidatedMsg)
+		}
+	}
 	return pushMsg, nil
 }
 
@@ -188,7 +257,19 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, err
 	if err != nil {
 		return nil, err
 	}
-	return p.parseResponse(resp)
+	notifications, err := p.parseResponse(resp)
+	resp, err = p.request(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
+	inbox, err := p.parseInboxResponse(resp)
+	notifSize := len(notifications)
+	inboxSize := len(inbox)
+	var messages = make([]plugins.PushMessage, notifSize+inboxSize)
+	for i, v := range notifications {
+		messages[i] = v
+	}
+	for i, v := range inbox {
+		messages[notifSize+i] = v
+	}
+	return messages, err
 }
 
 func toEpoch(stamp timeStamp) int64 {
@@ -221,10 +302,10 @@ type notification struct {
 	Object      object    `json:"object"`
 }
 
-func (n notification) picture() string {
-	u, err := baseUrl.Parse(fmt.Sprintf("%s/picture", n.From.Id))
+func picture(msgId string, id string) string {
+	u, err := baseUrl.Parse(fmt.Sprintf("%s/picture", id))
 	if err != nil {
-		log.Println("facebook plugin: cannot get picture for", n.Id)
+		log.Println("facebook plugin: cannot get picture for", msgId)
 		return ""
 	}
 	query := u.Query()
@@ -253,4 +334,105 @@ type GraphError struct {
 
 func (err *GraphError) Error() string {
 	return err.Message
+}
+
+// The inbox response format is described here:
+// https://developers.facebook.com/docs/graph-api/reference/v2.0/user/inbox
+type inboxDoc struct {
+	Data   []thread `json:"data"`
+	Paging struct {
+		Previous string `json:"previous"`
+		Next     string `json:"next"`
+	} `json:"paging"`
+	Summary summary `json:"summary"`
+}
+
+type summary struct {
+	UnseenCount int       `json:"unseen_count"`
+	UnreadCount int       `json:"unread_count"`
+	UpdatedTime timeStamp `json:"updated_time"`
+}
+
+type thread struct {
+	Id          string    `json:"id"`
+	Comments    comments  `json:"comments"`
+	To          []object  `json:"to"`
+	Unread      int       `json:"unread"`
+	Unseen      int       `json:"unseen"`
+	UpdatedTime timeStamp `json:"updated_time"`
+	Paging      struct {
+		Previous string `json:"previous"`
+		Next     string `json:"next"`
+	} `json:"paging"`
+}
+
+type comments struct {
+	Data   []message `json:"data"`
+	Paging struct {
+		Previous string `json:"previous"`
+		Next     string `json:"next"`
+	} `json:"paging"`
+}
+
+type message struct {
+	CreatedTime timeStamp `json:"created_time"`
+	From        object    `json:"from"`
+	Id          string    `json:"id"`
+	Message     string    `json:message`
+}
+
+func (doc *inboxDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
+	usernamesMap := make(map[string]string)
+	for _, t := range doc.Data[idxStart-1:] {
+		message := t.Comments.Data[0]
+		userId := message.From.Id
+		if _, ok := usernamesMap[userId]; !ok {
+			username := message.From.Name
+			usernamesMap[userId] = username
+		}
+	}
+	return usernamesMap
+}
+
+func (doc *inboxDoc) getConsolidatedMessage(usernames []string) *plugins.PushMessage {
+	// TRANSLATORS: This represents a message summary about more facebook messages
+	summary := gettext.Gettext("Multiple more messages")
+	// TRANSLATORS: This represents a message body with the comma separated facebook usernames
+	body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
+	action := "https://m.facebook.com/messages"
+	epoch := time.Now().Unix()
+	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+}
+
+func (t *thread) buildPushMessage() *plugins.PushMessage {
+	link := "https://www.facebook.com/messages?action=recent-messages"
+	epoch := toEpoch(t.UpdatedTime)
+	// get the single message we fetch
+	message := t.Comments.Data[0]
+	return plugins.NewStandardPushMessage(message.From.Name, message.Message, link, picture(t.Id, message.From.Id), epoch)
+}
+
+func (doc *notificationDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
+	usernamesMap := make(map[string]string)
+	for _, n := range doc.Data[idxStart:] {
+		if _, ok := usernamesMap[n.From.Id]; !ok {
+			usernamesMap[n.From.Id] = n.From.Name
+		}
+	}
+	return usernamesMap
+}
+
+func (doc *notificationDoc) getConsolidatedMessage(usernames []string) *plugins.PushMessage {
+	// TRANSLATORS: This represents a notification summary about more facebook notifications
+	summary := gettext.Gettext("Multiple more notifications")
+	// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
+	body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(usernames, ", "))
+	action := "https://m.facebook.com"
+	epoch := time.Now().Unix()
+	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+}
+
+func (n *notification) buildPushMessage() *plugins.PushMessage {
+	epoch := toEpoch(n.UpdatedTime)
+	return plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, picture(n.Id, n.From.Id), epoch)
 }
