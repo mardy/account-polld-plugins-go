@@ -19,8 +19,6 @@ package main
 
 import (
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"launchpad.net/account-polld/accounts"
@@ -29,62 +27,74 @@ import (
 )
 
 type AccountManager struct {
-	watcher   *accounts.Watcher
-	authData  accounts.AuthData
-	plugin    plugins.Plugin
-	interval  time.Duration
-	postWatch chan *PostWatch
-	authChan  chan accounts.AuthData
+	watcher      *accounts.Watcher
+	authData     accounts.AuthData
+	plugin       plugins.Plugin
+	interval     time.Duration
+	postWatch    chan *PostWatch
+	authChan     chan accounts.AuthData
+	doneChan     chan error
+	penaltyCount int
 }
 
 var (
-	pollInterval = time.Duration(5 * time.Minute)
-	maxInterval  = time.Duration(20 * time.Minute)
+	pollTimeout          = time.Duration(30 * time.Second)
+	bootstrapPollTimeout = time.Duration(5 * time.Minute)
+	maxCounter           = 4
 )
-
-func init() {
-	if intervalEnv := os.Getenv("ACCOUNT_POLLD_POLL_INTERVAL_MINUTES"); intervalEnv != "" {
-		if interval, err := strconv.ParseInt(intervalEnv, 0, 0); err == nil {
-			pollInterval = time.Duration(interval) * time.Minute
-		}
-	}
-}
 
 func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
 		watcher:   watcher,
 		plugin:    plugin,
-		interval:  pollInterval,
 		postWatch: postWatch,
 		authChan:  make(chan accounts.AuthData, 1),
+		doneChan:  make(chan error, 1),
 	}
 }
 
 func (a *AccountManager) Delete() {
 	close(a.authChan)
+	close(a.doneChan)
 }
 
-func (a *AccountManager) Loop() {
-	var ok bool
-	if a.authData, ok = <-a.authChan; !ok {
-		return
-	}
-	// This is an initial out of loop poll
-	a.poll()
-L:
-	for {
-		log.Println("Next poll set to", a.interval, "for account", a.authData.AccountId)
-		select {
-		case <-time.After(a.interval):
-			a.poll()
-		case a.authData, ok = <-a.authChan:
-			if !ok {
-				break L
-			}
-			a.poll()
+func (a *AccountManager) Poll(bootstrap bool) {
+	if !a.authData.Enabled {
+		var ok bool
+		if a.authData, ok = <-a.authChan; !ok {
+			log.Println("Account", a.authData.AccountId, "no longer enabled")
+			return
 		}
 	}
-	log.Printf("Ending poll loop for account %d", a.authData.AccountId)
+	if a.penaltyCount > 0 {
+		log.Printf("Leaving poll for account %d as penaly count is %d", a.authData.AccountId, a.penaltyCount)
+		a.penaltyCount--
+		return
+	}
+	timeout := pollTimeout
+	if bootstrap {
+		timeout = bootstrapPollTimeout
+	}
+
+	log.Printf("Starting poll for account %d", a.authData.AccountId)
+	go a.poll()
+
+	select {
+	case <-time.After(timeout):
+		log.Println("Poll for account", a.authData.AccountId, "has timed out out after", timeout)
+		a.penaltyCount++
+	case err := <-a.doneChan:
+		if err == nil {
+			log.Println("Poll for account", a.authData.AccountId, "was successful")
+			a.penaltyCount = 0
+		} else {
+			log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
+			if a.penaltyCount < maxCounter {
+				a.penaltyCount++
+			}
+		}
+	}
+	log.Printf("Ending poll for account %d", a.authData.AccountId)
 }
 
 func (a *AccountManager) poll() {
@@ -96,11 +106,6 @@ func (a *AccountManager) poll() {
 		return
 	}
 
-	if !a.authData.Enabled {
-		log.Println("Account", a.authData.AccountId, "no longer enabled")
-		return
-	}
-
 	if a.authData.Error != nil {
 		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
 		return
@@ -108,10 +113,6 @@ func (a *AccountManager) poll() {
 
 	if n, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
-		// penalizing the next poll
-		if a.interval.Minutes() < maxInterval.Minutes() {
-			a.interval += pollInterval
-		}
 
 		// If the error indicates that the authentication
 		// token has expired, request reauthentication and
@@ -120,13 +121,13 @@ func (a *AccountManager) poll() {
 			a.watcher.Refresh(a.authData.AccountId)
 			a.authData.Enabled = false
 		}
+		a.doneChan <- err
 	} else {
 		log.Println("Account", a.authData.AccountId, "has", len(n), "updates to report")
 		if len(n) > 0 {
 			a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
 		}
-		// on success we reset the timeout to the default interval
-		a.interval = pollInterval
+		a.doneChan <- nil
 	}
 }
 

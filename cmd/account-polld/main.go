@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"log"
 
@@ -30,6 +31,8 @@ import (
 	"launchpad.net/account-polld/plugins/facebook"
 	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/twitter"
+	"launchpad.net/account-polld/pollbus"
+	"launchpad.net/account-polld/qtcontact"
 	"launchpad.net/go-dbus/v1"
 )
 
@@ -52,7 +55,16 @@ const (
 	POSTAL_OBJECT_PATH_PART = "/com/ubuntu/Postal/"
 )
 
+var mainLoopOnce sync.Once
+
 func init() {
+	startMainLoop()
+}
+
+func startMainLoop() {
+	mainLoopOnce.Do(func() {
+		go qtcontact.MainLoopStart()
+	})
 }
 
 func main() {
@@ -64,52 +76,73 @@ func main() {
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
-	if bus, err := dbus.Connect(dbus.SessionBus); err != nil {
+	bus, err := dbus.Connect(dbus.SessionBus)
+	if err != nil {
 		log.Fatal("Cannot connect to bus", err)
-	} else {
-		go postOffice(bus, postWatch)
 	}
 
-	go monitorAccounts(postWatch)
+	pollBus := pollbus.New(bus)
+	go postOffice(bus, postWatch)
+	go monitorAccounts(postWatch, pollBus)
+
+	if err := pollBus.Init(); err != nil {
+		log.Fatal("Issue while setting up the poll bus:", err)
+	}
 
 	done := make(chan bool)
 	<-done
 }
 
-func monitorAccounts(postWatch chan *PostWatch) {
+func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watcher := accounts.NewWatcher(SERVICETYPE_POLL)
 	mgr := make(map[uint]*AccountManager)
+
 L:
-	for data := range watcher.C {
-		if account, ok := mgr[data.AccountId]; ok {
-			if data.Enabled {
-				log.Println("New account data for existing account with id", data.AccountId)
-				account.updateAuthData(data)
-			} else {
-				account.Delete()
-				delete(mgr, data.AccountId)
+	for {
+		select {
+		case data := <-watcher.C:
+			if account, ok := mgr[data.AccountId]; ok {
+				if data.Enabled {
+					log.Println("New account data for existing account with id", data.AccountId)
+					account.updateAuthData(data)
+				} else {
+					account.Delete()
+					delete(mgr, data.AccountId)
+				}
+			} else if data.Enabled {
+				var plugin plugins.Plugin
+				switch data.ServiceName {
+				case SERVICENAME_GMAIL:
+					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+					plugin = gmail.New(data.AccountId)
+				case SERVICENAME_FACEBOOK:
+					// This is just stubbed until the plugin exists.
+					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+					plugin = facebook.New(data.AccountId)
+				case SERVICENAME_TWITTER:
+					// This is just stubbed until the plugin exists.
+					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+					plugin = twitter.New()
+				default:
+					log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+					continue L
+				}
+				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
+				mgr[data.AccountId].updateAuthData(data)
+				mgr[data.AccountId].Poll(true)
 			}
-		} else if data.Enabled {
-			var plugin plugins.Plugin
-			switch data.ServiceName {
-			case SERVICENAME_GMAIL:
-				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-				plugin = gmail.New(data.AccountId)
-			case SERVICENAME_FACEBOOK:
-				// This is just stubbed until the plugin exists.
-				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-				plugin = facebook.New(data.AccountId)
-			case SERVICENAME_TWITTER:
-				// This is just stubbed until the plugin exists.
-				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-				plugin = twitter.New()
-			default:
-				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
-				continue L
+		case <-pollBus.PollChan:
+			var wg sync.WaitGroup
+			for _, v := range mgr {
+				wg.Add(1)
+				poll := v.Poll
+				go func() {
+					defer wg.Done()
+					poll(false)
+				}()
 			}
-			mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
-			mgr[data.AccountId].updateAuthData(data)
-			go mgr[data.AccountId].Loop()
+			wg.Wait()
+			pollBus.SignalDone()
 		}
 	}
 }

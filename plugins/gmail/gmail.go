@@ -32,6 +32,7 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/qtcontact"
 )
 
 const (
@@ -141,9 +142,12 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 		hdr := msg.Payload.mapHeaders()
 
 		from := hdr[hdrFROM]
+		var avatarPath string
+
 		if emailAddress, err := mail.ParseAddress(hdr[hdrFROM]); err == nil {
 			if emailAddress.Name != "" {
 				from = emailAddress.Name
+				avatarPath = qtcontact.GetAvatar(emailAddress.Address)
 			}
 		}
 		msgStamp := hdr.getTimestamp()
@@ -159,7 +163,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			// fmt with label personal and threadId
 			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
 			epoch := hdr.getEpoch()
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, avatarPath, epoch)
 		} else {
 			log.Print("gmail plugin ", p.accountId, ": skipping message id ", msg.Id, " with date ", msgStamp, " older than ", timeDelta)
 		}
