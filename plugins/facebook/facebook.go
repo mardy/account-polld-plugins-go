@@ -143,7 +143,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	latestUpdate := p.state.lastUpdate
 	for i, n := range result.Data {
 		if !n.isValid(p.state.lastUpdate) {
-			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "!=", p.state.lastUpdate, "or", n.Unread)
+			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "!=", p.state.lastUpdate, "or unread: ", n.Unread)
 		} else {
 			log.Println("facebook plugin: valid notification", n.Id, "dated:", n.UpdatedTime, "and read status:", n.Unread)
 			validNotifications = append(validNotifications, &result.Data[i]) // get the actual reference, not the copy
@@ -155,34 +155,8 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	p.state.lastUpdate = latestUpdate
 	p.state.persist(p.accountId)
 
-	pushMsg := []plugins.PushMessage{}
-	for _, n := range validNotifications {
-		msg := n.buildPushMessage()
-		pushMsg = append(pushMsg, *msg)
-		if len(pushMsg) == maxIndividualNotifications {
-			break
-		}
-	}
-
-	// Now we consolidate the remaining statuses
-	if len(validNotifications) > len(pushMsg) && len(validNotifications) >= consolidatedNotificationsIndexStart {
-		usernamesMap := result.getConsolidatedMessagesUsernames(consolidatedNotificationsIndexStart)
-		usernames := []string{}
-		for k, _ := range usernamesMap {
-			usernames = append(usernames, k)
-			// we don't too many usernames listed, this is a hard number
-			if len(usernames) > 10 {
-				usernames = append(usernames, "...")
-				break
-			}
-		}
-		if len(usernames) > 0 {
-			consolidatedMsg := result.getConsolidatedMessage(usernames)
-			pushMsg = append(pushMsg, *consolidatedMsg)
-		}
-	}
-
-	return pushMsg, nil
+	pushMsgs := p.buildPushMessages(validNotifications, &result, maxIndividualNotifications, consolidatedNotificationsIndexStart)
+	return pushMsgs, nil
 }
 
 func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessage, error) {
@@ -218,18 +192,22 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 	p.state.lastInboxUpdate = latestUpdate
 	p.state.persist(p.accountId)
 
+	pushMsgs := p.buildPushMessages(validThreads, &result, maxIndividualThreads, consolidatedThreadsIndexStart)
+	return pushMsgs, nil
+}
+
+func (p *fbPlugin) buildPushMessages(notifications []Notification, doc Document, max int, consolidatedIndexStart int) []plugins.PushMessage {
 	pushMsg := []plugins.PushMessage{}
-	for _, t := range validThreads {
-		msg := t.buildPushMessage()
+	for _, n := range notifications {
+		msg := n.buildPushMessage()
 		pushMsg = append(pushMsg, *msg)
-		if len(pushMsg) == maxIndividualThreads {
+		if len(pushMsg) == max {
 			break
 		}
 	}
-
-	// Now we consolidate the remaining messages
-	if len(validThreads) > len(pushMsg) && len(validThreads) >= consolidatedThreadsIndexStart {
-		usernamesMap := result.getConsolidatedMessagesUsernames(consolidatedThreadsIndexStart)
+	// Now we consolidate the remaining statuses
+	if len(notifications) > len(pushMsg) && len(notifications) >= consolidatedIndexStart {
+		usernamesMap := doc.getConsolidatedMessagesUsernames(consolidatedIndexStart)
 		usernames := []string{}
 		for _, v := range usernamesMap {
 			usernames = append(usernames, v)
@@ -240,11 +218,11 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 			}
 		}
 		if len(usernames) > 0 {
-			consolidatedMsg := result.getConsolidatedMessage(usernames)
+			consolidatedMsg := doc.getConsolidatedMessage(usernames)
 			pushMsg = append(pushMsg, *consolidatedMsg)
 		}
 	}
-	return pushMsg, nil
+	return pushMsg
 }
 
 func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
@@ -405,8 +383,7 @@ func (doc *inboxDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]s
 		message := t.Comments.Data[0]
 		userId := message.From.Id
 		if _, ok := usernamesMap[userId]; !ok {
-			username := message.From.Name
-			usernamesMap[userId] = username
+			usernamesMap[userId] = message.From.Name
 		}
 	}
 	return usernamesMap

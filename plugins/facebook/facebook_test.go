@@ -18,6 +18,7 @@ package facebook
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -122,6 +123,107 @@ const (
   ]
 }
 `
+	largeNotificationsBody = `
+{
+  "data": [
+    {
+      "id": "notif_id",
+      "from": {
+        "id": "sender_id",
+        "name": "Sender"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-12T09:51:57+0000",
+      "updated_time": "2014-07-12T09:51:57+0000",
+      "title": "Sender posted on your timeline: \"The message...\"",
+      "link": "http://www.facebook.com/recipient/posts/id",
+      "application": {
+        "name": "Wall",
+        "namespace": "wall",
+        "id": "2719290516"
+      },
+      "unread": 1
+    },
+    {
+      "id": "notif_1105650586_80600069",
+      "from": {
+        "id": "sender2_id",
+        "name": "Sender2"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-08T06:17:52+0000",
+      "updated_time": "2014-07-08T06:17:52+0000",
+      "title": "Sender2's birthday was on July 7.",
+      "link": "http://www.facebook.com/profile.php?id=xxx&ref=brem",
+      "application": {
+        "name": "Gifts",
+        "namespace": "superkarma",
+        "id": "329122197162272"
+      },
+      "unread": 1,
+      "object": {
+        "id": "sender2_id",
+        "name": "Sender2"
+      }
+    },
+    {
+      "id": "notif_id_3",
+      "from": {
+        "id": "sender3_id",
+        "name": "Sender3"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-12T09:51:57+0000",
+      "updated_time": "2014-07-12T09:51:57+0000",
+      "title": "Sender posted on your timeline: \"The message...\"",
+      "link": "http://www.facebook.com/recipient/posts/id",
+      "application": {
+        "name": "Wall",
+        "namespace": "wall",
+        "id": "2719290516"
+      },
+      "unread": 1
+    },
+    {
+      "id": "notif_id_4",
+      "from": {
+        "id": "sender4_id",
+        "name": "Sender2"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-08T06:17:52+0000",
+      "updated_time": "2014-07-08T06:17:52+0000",
+      "title": "Sender2's birthday was on July 7.",
+      "link": "http://www.facebook.com/profile.php?id=xxx&ref=brem",
+      "application": {
+        "name": "Gifts",
+        "namespace": "superkarma",
+        "id": "329122197162272"
+      },
+      "unread": 1
+    }
+  ],
+  "paging": {
+    "previous": "https://graph.facebook.com/v2.0/recipient/notifications?limit=5000&since=1405158717&__paging_token=enc_AewDzwIQmWOwPNO-36GaZsaJAog8l93HQ7uLEO-gp1Tb6KCiolXfzMCcGY2KjrJJsDJXdDmNJObICr5dewfMZgGs",
+    "next": "https://graph.facebook.com/v2.0/recipient/notifications?limit=5000&until=1404705077&__paging_token=enc_Aewlhut5DQyhqtLNr7pLCMlYU012t4XY7FOt7cooz4wsWIWi-Jqz0a0IDnciJoeLu2vNNQkbtOpCmEmsVsN4hkM4"
+  },
+  "summary": [
+  ]
+}
+`
+
 	inboxBody = `
 {
   "data": [
@@ -219,10 +321,30 @@ func (s S) TestParseNotifications(c *C) {
 	messages, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 2)
+	fmt.Println(messages)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
+	c.Check(p.state.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+}
+
+func (s S) TestParseLotsOfNotifications(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(largeNotificationsBody))},
+	}
+	p := &fbPlugin{}
+	messages, err := p.parseResponse(resp)
+	c.Assert(err, IsNil)
+	c.Assert(len(messages), Equals, 3)
+	fmt.Println(messages)
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
+	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
+	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
+	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more notifications")
+	c.Check(messages[2].Notification.Card.Body, Equals, "From Sender3, Sender2")
 	c.Check(p.state.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
