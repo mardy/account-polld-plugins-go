@@ -138,16 +138,14 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 		return nil, err
 	}
 
-	var validNotifications []notification
+	var validNotifications []Notification
 	latestUpdate := p.state.lastUpdate
-	for _, n := range result.Data {
-		if n.UpdatedTime <= p.state.lastUpdate {
-			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "is older than", p.state.lastUpdate)
-		} else if n.Unread != 1 {
-			log.Println("facebook plugin: skipping notification", n.Id, "as it's read:", n.Unread)
+	for i, n := range result.Data {
+		if !n.isValid(p.state.lastUpdate) {
+			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "!=", p.state.lastUpdate, "or", n.Unread)
 		} else {
 			log.Println("facebook plugin: valid notification", n.Id, "dated:", n.UpdatedTime, "and read status:", n.Unread)
-			validNotifications = append(validNotifications, n)
+			validNotifications = append(validNotifications, &result.Data[i]) // get the actual reference, not the copy
 			if n.UpdatedTime > latestUpdate {
 				latestUpdate = n.UpdatedTime
 			}
@@ -201,16 +199,16 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 		return nil, err
 	}
 
-	var validThreads []thread
+	var validThreads []Notification
 	latestUpdate := p.state.lastUpdate
-	for _, t := range result.Data {
-		if t.UpdatedTime <= p.state.lastUpdate || t.Unread == 0 || t.Unseen == 0 {
+	for i, t := range result.Data {
+		if !t.isValid(p.state.lastInboxUpdate) {
 			// already seen, move on
 			log.Println("facebook plugin: skipping seen thread:", t)
 		} else {
 			// process this thread
 			log.Println("facebook plugin: valid thread", t.Id, "dated:", t.UpdatedTime, "and read status:", t.Unread)
-			validThreads = append(validThreads, t)
+			validThreads = append(validThreads, &result.Data[i]) // get the actual reference, not the copy
 			if t.UpdatedTime > latestUpdate {
 				latestUpdate = t.UpdatedTime
 			}
@@ -220,6 +218,7 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 	p.state.persist(p.accountId)
 
 	pushMsg := []plugins.PushMessage{}
+	fmt.Println("valid Threads", validThreads)
 	for _, t := range validThreads {
 		msg := t.buildPushMessage()
 		pushMsg = append(pushMsg, *msg)
@@ -228,7 +227,7 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 		}
 	}
 
-	// Now we consolidate the remaining statuses
+	// Now we consolidate the remaining messages
 	if len(validThreads) > len(pushMsg) && len(validThreads) >= consolidatedThreadsIndexStart {
 		usernamesMap := result.getConsolidatedMessagesUsernames(consolidatedThreadsIndexStart)
 		usernames := []string{}
@@ -412,6 +411,10 @@ func (t *thread) buildPushMessage() *plugins.PushMessage {
 	return plugins.NewStandardPushMessage(message.From.Name, message.Message, link, picture(t.Id, message.From.Id), epoch)
 }
 
+func (t *thread) isValid(tStamp timeStamp) bool {
+	return !(t.UpdatedTime <= tStamp || t.Unread == 0 || t.Unseen == 0)
+}
+
 func (doc *notificationDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
 	usernamesMap := make(map[string]string)
 	for _, n := range doc.Data[idxStart:] {
@@ -436,3 +439,20 @@ func (n *notification) buildPushMessage() *plugins.PushMessage {
 	epoch := toEpoch(n.UpdatedTime)
 	return plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, picture(n.Id, n.From.Id), epoch)
 }
+
+func (n *notification) isValid(tStamp timeStamp) bool {
+	return n.UpdatedTime > tStamp && n.Unread >= 1
+}
+
+type Document interface {
+	getConsolidatedMessage([]string) *plugins.PushMessage
+	getConsolidatedMessagesUsernames(int) map[string]string
+}
+
+type Notification interface {
+	buildPushMessage() *plugins.PushMessage
+	isValid(timeStamp) bool
+}
+
+var _ Notification = (*thread)(nil)
+var _ Notification = (*notification)(nil)
