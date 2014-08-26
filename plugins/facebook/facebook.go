@@ -20,6 +20,7 @@ package facebook
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -218,7 +219,6 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 	p.state.persist(p.accountId)
 
 	pushMsg := []plugins.PushMessage{}
-	fmt.Println("valid Threads", validThreads)
 	for _, t := range validThreads {
 		msg := t.buildPushMessage()
 		pushMsg = append(pushMsg, *msg)
@@ -247,28 +247,47 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 	return pushMsg, nil
 }
 
+func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+	resp, err := p.request(authData, "me/notifications")
+	if err != nil {
+		log.Println("facebook plugin: notifications poll failed: ", err)
+		return nil, err
+	}
+	notifications, err := p.parseResponse(resp)
+	if err != nil {
+		log.Println("facebook plugin: failed to parse notification response: ", err)
+		return nil, err
+	}
+	return notifications, nil
+}
+
+func (p *fbPlugin) getInbox(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+	resp, err := p.request(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
+	if err != nil {
+		log.Println("facebook plugin: inbox poll failed: ", err)
+		return nil, err
+	}
+	inbox, err := p.parseInboxResponse(resp)
+	if err != nil {
+		log.Println("facebook plugin: failed to parse inbox response: ", err)
+		return nil, err
+	}
+	return inbox, nil
+}
+
 func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_FACEBOOK"); token != "" {
 		authData.AccessToken = token
 	}
-	resp, err := p.request(authData, "me/notifications")
-	if err != nil {
-		return nil, err
+	notifications, notifErr := p.getNotifications(authData)
+	inbox, inboxErr := p.getInbox(authData)
+	// only return error if both requests failed
+	if notifErr != nil && inboxErr != nil {
+		return nil, errors.New(fmt.Sprintf("Poll failed with '%s' and '%s'", notifErr, inboxErr))
 	}
-	notifications, err := p.parseResponse(resp)
-	resp, err = p.request(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
-	inbox, err := p.parseInboxResponse(resp)
-	notifSize := len(notifications)
-	inboxSize := len(inbox)
-	var messages = make([]plugins.PushMessage, notifSize+inboxSize)
-	for i, v := range notifications {
-		messages[i] = v
-	}
-	for i, v := range inbox {
-		messages[notifSize+i] = v
-	}
-	return messages, err
+	messages := append(notifications, inbox...)
+	return messages, nil
 }
 
 func toEpoch(stamp timeStamp) int64 {
