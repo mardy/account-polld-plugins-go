@@ -170,6 +170,9 @@ var ErrTokenExpired = errors.New("Token expired")
 
 var cmdName string
 
+var XdgDataFind = xdg.Data.Find
+var XdgDataEnsure = xdg.Data.Ensure
+
 // Persist stores the plugins data in a common location to a json file
 // from which it can recover later
 func Persist(pluginName string, accountId uint, data interface{}) (err error) {
@@ -179,7 +182,7 @@ func Persist(pluginName string, accountId uint, data interface{}) (err error) {
 			os.Remove(p)
 		}
 	}()
-	p, err = xdg.Data.Ensure(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
+	p, err = XdgDataEnsure(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
 	if err != nil {
 		return err
 	}
@@ -211,7 +214,7 @@ func FromPersist(pluginName string, accountId uint, data interface{}) (err error
 			}
 		}
 	}()
-	p, err = xdg.Data.Find(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
+	p, err = XdgDataFind(filepath.Join(cmdName, fmt.Sprintf("%s-%d.json", pluginName, accountId)))
 	if err != nil {
 		return err
 	}
