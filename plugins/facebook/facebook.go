@@ -52,6 +52,7 @@ func (state fbState) persist(accountId uint) (err error) {
 	err = plugins.Persist(pluginName, accountId, state)
 	if err != nil {
 		log.Print("facebook plugin", accountId, ": failed to save state: ", err)
+		return err
 	}
 	return nil
 }
@@ -61,18 +62,18 @@ func stateFromStorage(accountId uint) (state fbState, err error) {
 	if err != nil {
 		return state, err
 	}
-	if _, err := time.Parse(facebookTime, string(state.lastUpdate)); err == nil {
+	if _, err := time.Parse(facebookTime, string(state.LastUpdate)); err != nil {
 		return state, err
 	}
-	if _, err := time.Parse(facebookTime, string(state.lastInboxUpdate)); err == nil {
+	if _, err := time.Parse(facebookTime, string(state.LastInboxUpdate)); err != nil {
 		return state, err
 	}
 	return state, nil
 }
 
 type fbState struct {
-	lastUpdate      timeStamp `json:"lastNotificationUpdate"`
-	lastInboxUpdate timeStamp `json:"lastInboxUpdate"`
+	LastUpdate      timeStamp `json:"last_notification_update"`
+	LastInboxUpdate timeStamp `json:"last_inbox_update"`
 }
 
 type fbPlugin struct {
@@ -107,7 +108,9 @@ func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Resp
 	return http.Get(u.String())
 }
 
-func (p *fbPlugin) checkError(resp *http.Response, decoder *json.Decoder) error {
+func (p *fbPlugin) decodeResponse(resp *http.Response, result interface{}) error {
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		var result errorDoc
 		if err := decoder.Decode(&result); err != nil {
@@ -118,82 +121,32 @@ func (p *fbPlugin) checkError(resp *http.Response, decoder *json.Decoder) error 
 		}
 		return &result.Error
 	}
+	// TODO: Follow the "paging.next" link if we get more than one
+	// page full of notifications.
+	if err := decoder.Decode(result); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-	err := p.checkError(resp, decoder)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Follow the "paging.next" link if we get more than one
-	// page full of notifications.  The default limit seems to be
-	// 5000 though, which we are unlikely to hit, since
-	// notifications are deleted once read.
-	// TODO filter out of date messages before operating
-	var result notificationDoc
-	if err := decoder.Decode(&result); err != nil {
-		return nil, err
-	}
-
+func (p *fbPlugin) filterNotifications(doc Document, lastUpdate *timeStamp) []Notification {
 	var validNotifications []Notification
-	latestUpdate := p.state.lastUpdate
-	for i, n := range result.Data {
-		if !n.isValid(p.state.lastUpdate) {
-			log.Println("facebook plugin: skipping notification", n.Id, "as", n.UpdatedTime, "!=", p.state.lastUpdate, "or unread: ", n.Unread)
+	latestUpdate := *lastUpdate
+	for i := 0; i < doc.size(); i++ {
+		n := doc.notification(i)
+		if !n.isValid(*lastUpdate) {
+			log.Println("facebook plugin: skipping:", n)
 		} else {
-			log.Println("facebook plugin: valid notification", n.Id, "dated:", n.UpdatedTime, "and read status:", n.Unread)
-			validNotifications = append(validNotifications, &result.Data[i]) // get the actual reference, not the copy
-			if n.UpdatedTime > latestUpdate {
-				latestUpdate = n.UpdatedTime
+			log.Println("facebook plugin: valid:", n)
+			validNotifications = append(validNotifications, n) // get the actual reference, not the copy
+			if n.updatedTime() > latestUpdate {
+				latestUpdate = n.updatedTime()
 			}
 		}
 	}
-	p.state.lastUpdate = latestUpdate
+	*lastUpdate = latestUpdate
 	p.state.persist(p.accountId)
-
-	pushMsgs := p.buildPushMessages(validNotifications, &result, maxIndividualNotifications, consolidatedNotificationsIndexStart)
-	return pushMsgs, nil
-}
-
-func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessage, error) {
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-	err := p.checkError(resp, decoder)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Follow the "paging.next" link, need to check what the default limit is, etc.
-	// TODO filter out of date messages before operating
-	var result inboxDoc
-	if err := decoder.Decode(&result); err != nil {
-		return nil, err
-	}
-
-	var validThreads []Notification
-	latestUpdate := p.state.lastUpdate
-	for i, t := range result.Data {
-		if !t.isValid(p.state.lastInboxUpdate) {
-			// already seen, move on
-			log.Println("facebook plugin: skipping seen thread:", t)
-		} else {
-			// process this thread
-			log.Println("facebook plugin: valid thread", t.Id, "dated:", t.UpdatedTime, "and read status:", t.Unread)
-			validThreads = append(validThreads, &result.Data[i]) // get the actual reference, not the copy
-			if t.UpdatedTime > latestUpdate {
-				latestUpdate = t.UpdatedTime
-			}
-		}
-	}
-	p.state.lastInboxUpdate = latestUpdate
-	p.state.persist(p.accountId)
-
-	pushMsgs := p.buildPushMessages(validThreads, &result, maxIndividualThreads, consolidatedThreadsIndexStart)
-	return pushMsgs, nil
+	return validNotifications
 }
 
 func (p *fbPlugin) buildPushMessages(notifications []Notification, doc Document, max int, consolidatedIndexStart int) []plugins.PushMessage {
@@ -223,6 +176,27 @@ func (p *fbPlugin) buildPushMessages(notifications []Notification, doc Document,
 		}
 	}
 	return pushMsg
+}
+
+func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+	var result notificationDoc
+	if err := p.decodeResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	// TODO filter out of date messages before operating?
+	validNotifications := p.filterNotifications(&result, &p.state.LastUpdate)
+	pushMsgs := p.buildPushMessages(validNotifications, &result, maxIndividualNotifications, consolidatedNotificationsIndexStart)
+	return pushMsgs, nil
+}
+
+func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+	var result inboxDoc
+	if err := p.decodeResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	validThreads := p.filterNotifications(&result, &p.state.LastInboxUpdate)
+	pushMsgs := p.buildPushMessages(validThreads, &result, maxIndividualThreads, consolidatedThreadsIndexStart)
+	return pushMsgs, nil
 }
 
 func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
@@ -399,6 +373,14 @@ func (doc *inboxDoc) getConsolidatedMessage(usernames []string) *plugins.PushMes
 	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 }
 
+func (doc *inboxDoc) size() int {
+	return len(doc.Data)
+}
+
+func (doc *inboxDoc) notification(idx int) Notification {
+	return &doc.Data[idx]
+}
+
 func (t *thread) buildPushMessage() *plugins.PushMessage {
 	link := "https://www.facebook.com/messages?action=recent-messages"
 	epoch := toEpoch(t.UpdatedTime)
@@ -409,6 +391,14 @@ func (t *thread) buildPushMessage() *plugins.PushMessage {
 
 func (t *thread) isValid(tStamp timeStamp) bool {
 	return !(t.UpdatedTime <= tStamp || t.Unread == 0 || t.Unseen == 0)
+}
+
+func (t *thread) updatedTime() timeStamp {
+	return t.UpdatedTime
+}
+
+func (t *thread) String() string {
+	return fmt.Sprintf("id: %s, dated: %s, unread: %d", t.Id, t.UpdatedTime, t.Unread)
 }
 
 func (doc *notificationDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
@@ -431,6 +421,14 @@ func (doc *notificationDoc) getConsolidatedMessage(usernames []string) *plugins.
 	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 }
 
+func (doc *notificationDoc) size() int {
+	return len(doc.Data)
+}
+
+func (doc *notificationDoc) notification(idx int) Notification {
+	return &doc.Data[idx]
+}
+
 func (n *notification) buildPushMessage() *plugins.PushMessage {
 	epoch := toEpoch(n.UpdatedTime)
 	return plugins.NewStandardPushMessage(n.From.Name, n.Title, n.Link, picture(n.Id, n.From.Id), epoch)
@@ -440,14 +438,26 @@ func (n *notification) isValid(tStamp timeStamp) bool {
 	return n.UpdatedTime > tStamp && n.Unread >= 1
 }
 
+func (n *notification) updatedTime() timeStamp {
+	return n.UpdatedTime
+}
+
+func (n *notification) String() string {
+	return fmt.Sprintf("id: %s, dated: %s, unread: %d", n.Id, n.UpdatedTime, n.Unread)
+}
+
 type Document interface {
 	getConsolidatedMessage([]string) *plugins.PushMessage
 	getConsolidatedMessagesUsernames(int) map[string]string
+	size() int
+	notification(int) Notification
 }
 
 type Notification interface {
 	buildPushMessage() *plugins.PushMessage
 	isValid(timeStamp) bool
+	updatedTime() timeStamp
+	String() string
 }
 
 var _ Notification = (*thread)(nil)
