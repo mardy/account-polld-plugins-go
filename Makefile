@@ -17,6 +17,18 @@ TOTEST = $(shell env GOPATH=$(GOPATH) go list $(PROJECT)/...)
 check:
 	go test $(TESTFLAGS) $(TOTEST)
 
+coverage-html:
+	mkdir -p coverhtml
+	for pkg in $(TOTEST); do \
+		relname="$${pkg#$(PROJECT)/}" ; \
+		mkdir -p coverhtml/$$(dirname $${relname}) ; \
+		go test $(TESTFLAGS) -a -coverprofile=coverhtml/$${relname}.out $$pkg ; \
+		if [ -f coverhtml/$${relname}.out ] ; then \
+			go tool cover -html=coverhtml/$${relname}.out -o coverhtml/$${relname}.html ; \
+			go tool cover -func=coverhtml/$${relname}.out -o coverhtml/$${relname}.txt ; \
+		fi \
+	done
+
 check-format:
 	scripts/check_fmt $(PROJECT)
 
