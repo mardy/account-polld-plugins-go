@@ -122,10 +122,7 @@ func (p *fbPlugin) decodeResponse(resp *http.Response, result interface{}) error
 	}
 	// TODO: Follow the "paging.next" link if we get more than one
 	// page full of notifications.
-	if err := decoder.Decode(result); err != nil {
-		return err
-	}
-	return nil
+	return decoder.Decode(result)
 }
 
 func (p *fbPlugin) filterNotifications(doc Document, lastUpdate *timeStamp) []Notification {
