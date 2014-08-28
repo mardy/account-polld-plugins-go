@@ -20,7 +20,6 @@ package facebook
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -236,7 +235,7 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, err
 	inbox, inboxErr := p.getInbox(authData)
 	// only return error if both requests failed
 	if notifErr != nil && inboxErr != nil {
-		return nil, errors.New(fmt.Sprintf("Poll failed with '%s' and '%s'", notifErr, inboxErr))
+		return nil, fmt.Errorf("poll failed with '%s' and '%s'", notifErr, inboxErr)
 	}
 	messages := append(notifications, inbox...)
 	return messages, nil

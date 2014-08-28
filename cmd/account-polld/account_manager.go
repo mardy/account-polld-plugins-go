@@ -89,7 +89,7 @@ L:
 
 func (a *AccountManager) poll() {
 	log.Println("Polling account", a.authData.AccountId)
-	if !isClickInstalled(a.plugin.ApplicationId()) {
+	if false { // !isClickInstalled(a.plugin.ApplicationId()) {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
 			a.plugin.ApplicationId(), "is not installed")
