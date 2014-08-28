@@ -1,3 +1,14 @@
+account-polld (0.1+14.10.20140825.1-0ubuntu1) utopic; urgency=low
+
+  [ CI bot ]
+  * Switch from self polling to being polled by the push client that
+    manages the power state
+
+  [ Sergio Schvezov ]
+  * Adding gmail avatar's through QtContacts
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 25 Aug 2014 16:43:27 +0000
+
 account-polld (0.1+14.10.20140811.1-0ubuntu1) utopic; urgency=low
 
   [ CI bot ]
