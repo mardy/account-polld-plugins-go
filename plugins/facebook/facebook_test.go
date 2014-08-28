@@ -18,24 +18,28 @@ package facebook
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"testing"
 
 	. "launchpad.net/gocheck"
 
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/go-xdg/v0"
 )
 
-type S struct{}
-
-func init() {
-	Suite(S{})
+type S struct {
+	tempDir string
 }
 
-func TestAll(t *testing.T) {
-	TestingT(t)
-}
+var _ = Suite(&S{})
+
+func Test(t *testing.T) { TestingT(t) }
 
 // closeWraper adds a dummy Close() method to a reader
 type closeWrapper struct {
@@ -122,9 +126,216 @@ const (
   ]
 }
 `
+	largeNotificationsBody = `
+{
+  "data": [
+    {
+      "id": "notif_id",
+      "from": {
+        "id": "sender_id",
+        "name": "Sender"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-12T09:51:57+0000",
+      "updated_time": "2014-07-12T09:51:57+0000",
+      "title": "Sender posted on your timeline: \"The message...\"",
+      "link": "http://www.facebook.com/recipient/posts/id",
+      "application": {
+        "name": "Wall",
+        "namespace": "wall",
+        "id": "2719290516"
+      },
+      "unread": 1
+    },
+    {
+      "id": "notif_1105650586_80600069",
+      "from": {
+        "id": "sender2_id",
+        "name": "Sender2"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-08T06:17:52+0000",
+      "updated_time": "2014-07-08T06:17:52+0000",
+      "title": "Sender2's birthday was on July 7.",
+      "link": "http://www.facebook.com/profile.php?id=xxx&ref=brem",
+      "application": {
+        "name": "Gifts",
+        "namespace": "superkarma",
+        "id": "329122197162272"
+      },
+      "unread": 1,
+      "object": {
+        "id": "sender2_id",
+        "name": "Sender2"
+      }
+    },
+    {
+      "id": "notif_id_3",
+      "from": {
+        "id": "sender3_id",
+        "name": "Sender3"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-12T09:51:57+0000",
+      "updated_time": "2014-07-12T09:51:57+0000",
+      "title": "Sender posted on your timeline: \"The message...\"",
+      "link": "http://www.facebook.com/recipient/posts/id",
+      "application": {
+        "name": "Wall",
+        "namespace": "wall",
+        "id": "2719290516"
+      },
+      "unread": 1
+    },
+    {
+      "id": "notif_id_4",
+      "from": {
+        "id": "sender4_id",
+        "name": "Sender2"
+      },
+      "to": {
+        "id": "recipient_id",
+        "name": "Recipient"
+      },
+      "created_time": "2014-07-08T06:17:52+0000",
+      "updated_time": "2014-07-08T06:17:52+0000",
+      "title": "Sender2's birthday was on July 7.",
+      "link": "http://www.facebook.com/profile.php?id=xxx&ref=brem",
+      "application": {
+        "name": "Gifts",
+        "namespace": "superkarma",
+        "id": "329122197162272"
+      },
+      "unread": 1
+    }
+  ],
+  "paging": {
+    "previous": "https://graph.facebook.com/v2.0/recipient/notifications?limit=5000&since=1405158717&__paging_token=enc_AewDzwIQmWOwPNO-36GaZsaJAog8l93HQ7uLEO-gp1Tb6KCiolXfzMCcGY2KjrJJsDJXdDmNJObICr5dewfMZgGs",
+    "next": "https://graph.facebook.com/v2.0/recipient/notifications?limit=5000&until=1404705077&__paging_token=enc_Aewlhut5DQyhqtLNr7pLCMlYU012t4XY7FOt7cooz4wsWIWi-Jqz0a0IDnciJoeLu2vNNQkbtOpCmEmsVsN4hkM4"
+  },
+  "summary": [
+  ]
+}
+`
+
+	inboxBody = `
+{
+  "data": [
+    {
+      "unread": 1, 
+      "unseen": 1, 
+      "id": "445809168892281", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892281_1408991972", 
+            "from": {
+              "id": "346217352202239", 
+              "name": "Pollod Magnifico"
+            }, 
+            "message": "Hola mundo!", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    },
+    {
+      "unread": 2, 
+      "unseen": 1, 
+      "id": "445809168892282", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892282_1408991973", 
+            "from": {
+              "id": "346217352202239", 
+              "name": "Pollitod Magnifico"
+            }, 
+            "message": "Hola!", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    },
+    {
+      "unread": 2, 
+      "unseen": 1, 
+      "id": "445809168892283", 
+      "updated_time": "2014-08-25T18:39:32+0000", 
+      "comments": {
+        "data": [
+          {
+            "id": "445809168892282_1408991973", 
+            "from": {
+              "id": "346217352202240", 
+              "name": "A Friend"
+            }, 
+            "message": "mellon", 
+            "created_time": "2014-08-25T18:39:32+0000"
+          }
+        ], 
+        "paging": {
+          "previous": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&since=1408991972&__paging_token=enc_Aew2kKJXEXzdm9k89DvLYz_y8nYxUbvElWcn6h_pKMRsoAPTPpkU7-AsGhkcYF6M1qbomOnFJf9ckL5J3hTltLFq", 
+          "next": "https://graph.facebook.com/v2.0/445809168892281/comments?limit=1&until=1408991972&__paging_token=enc_Aewlixpk4h4Vq79-W1ixrTM6ONbsMUDrcj0vLABs34tbhWarfpQLf818uoASWNDEpQO4XEXh5HbgHpcCqnuNVEOR"
+        }
+      }
+    }
+
+
+  ], 
+  "paging": {
+    "previous": "https://graph.facebook.com/v2.0/270128826512416/inbox?fields=unread,unseen,comments.limit(1)&limit=25&since=1408991972&__paging_token=enc_Aey99ACSOyZqN_7I-yWLnY8K3dqu4wVsx-Th3kMHMTMQ5VPbQRPgCQiJps0II1QAXDAVzHplqPS8yNgq8Zs_G2aK", 
+    "next": "https://graph.facebook.com/v2.0/270128826512416/inbox?fields=unread,unseen,comments.limit(1)&limit=25&until=1408991972&__paging_token=enc_AewjHkk10NNjRCXJCoaP5hyf22kw-htwxsDaVOiLY-IiXxB99sKNGlfFFmkcG-VeMGUETI2agZGR_1IWP5W4vyPL"
+  }, 
+  "summary": {
+    "unseen_count": 0, 
+    "unread_count": 1, 
+    "updated_time": "2014-08-25T19:05:49+0000"
+  }
+}
+`
 )
 
-func (s S) TestParseNotifications(c *C) {
+func (s *S) SetUpTest(c *C) {
+	s.tempDir = c.MkDir()
+	plugins.XdgDataFind = func(a string) (string, error) {
+		return filepath.Join(s.tempDir, a), nil
+	}
+	plugins.XdgDataEnsure = func(a string) (string, error) {
+		p := filepath.Join(s.tempDir, a)
+		base := path.Dir(p)
+		if _, err := os.Stat(base); err != nil {
+			os.MkdirAll(base, 0700)
+		}
+		return p, nil
+	}
+}
+
+func (s *S) TearDownTest(c *C) {
+	plugins.XdgDataFind = xdg.Data.Find
+	plugins.XdgDataEnsure = xdg.Data.Find
+}
+
+func (s *S) TestParseNotifications(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
@@ -137,24 +348,42 @@ func (s S) TestParseNotifications(c *C) {
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
-	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+	c.Check(p.state.LastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
-func (s S) TestIgnoreOldNotifications(c *C) {
+func (s *S) TestParseLotsOfNotifications(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(largeNotificationsBody))},
+	}
+	p := &fbPlugin{}
+	messages, err := p.parseResponse(resp)
+	c.Assert(err, IsNil)
+	c.Assert(len(messages), Equals, 3)
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
+	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
+	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
+	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more notifications")
+	c.Check(messages[2].Notification.Card.Body, Equals, "From Sender3, Sender2")
+	c.Check(p.state.LastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+}
+
+func (s *S) TestIgnoreOldNotifications(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
-	p := &fbPlugin{lastUpdate: "2014-07-08T06:17:52+0000"}
+	p := &fbPlugin{state: fbState{LastUpdate: "2014-07-08T06:17:52+0000"}}
 	messages, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
 	c.Assert(len(messages), Equals, 1)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
-	c.Check(p.lastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
+	c.Check(p.state.LastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
-func (s S) TestErrorResponse(c *C) {
+func (s *S) TestParseResponseErrorResponse(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusBadRequest,
 		Body:       closeWrapper{bytes.NewReader([]byte(errorBody))},
@@ -168,7 +397,36 @@ func (s S) TestErrorResponse(c *C) {
 	c.Check(graphErr.Code, Equals, 2500)
 }
 
-func (s S) TestTokenExpiredErrorResponse(c *C) {
+func (s *S) TestDecodeResponseErrorResponse(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       closeWrapper{bytes.NewReader([]byte(errorBody))},
+	}
+	p := &fbPlugin{}
+	var result notificationDoc
+	err := p.decodeResponse(resp, &result)
+	c.Check(result, DeepEquals, notificationDoc{})
+	c.Assert(err, Not(IsNil))
+	graphErr := err.(*GraphError)
+	c.Check(graphErr.Message, Equals, "Unknown path components: /xyz")
+	c.Check(graphErr.Code, Equals, 2500)
+}
+
+func (s *S) TestDecodeResponseErrorResponseFails(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Body:       closeWrapper{bytes.NewReader([]byte("hola" + errorBody))},
+	}
+	p := &fbPlugin{}
+	var result notificationDoc
+	err := p.decodeResponse(resp, &result)
+	c.Check(result, DeepEquals, notificationDoc{})
+	c.Assert(err, NotNil)
+	jsonErr := err.(*json.SyntaxError)
+	c.Check(jsonErr.Offset, Equals, int64(1))
+}
+
+func (s *S) TestTokenExpiredErrorResponse(c *C) {
 	resp := &http.Response{
 		StatusCode: http.StatusBadRequest,
 		Body:       closeWrapper{bytes.NewReader([]byte(tokenExpiredErrorBody))},
@@ -177,4 +435,161 @@ func (s S) TestTokenExpiredErrorResponse(c *C) {
 	notifications, err := p.parseResponse(resp)
 	c.Check(notifications, IsNil)
 	c.Assert(err, Equals, plugins.ErrTokenExpired)
+}
+
+func (s *S) TestParseInbox(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	p := &fbPlugin{}
+	messages, err := p.parseInboxResponse(resp)
+	c.Assert(err, IsNil)
+	c.Assert(len(messages), Equals, 3)
+	c.Check(messages[0].Notification.Card.Summary, Equals, "Pollod Magnifico")
+	c.Check(messages[0].Notification.Card.Body, Equals, "Hola mundo!")
+	c.Check(messages[1].Notification.Card.Summary, Equals, "Pollitod Magnifico")
+	c.Check(messages[1].Notification.Card.Body, Equals, "Hola!")
+	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more messages")
+	c.Check(messages[2].Notification.Card.Body, Equals, "From Pollitod Magnifico, A Friend")
+	c.Check(p.state.LastInboxUpdate, Equals, timeStamp("2014-08-25T18:39:32+0000"))
+}
+
+func (s *S) TestDecodeResponse(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	p := &fbPlugin{}
+	var doc inboxDoc
+	err := p.decodeResponse(resp, &doc)
+	c.Check(err, IsNil)
+	c.Check(len(doc.Data), Equals, 3)
+}
+
+func (s *S) TestDecodeResponseFails(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte("hola" + inboxBody))},
+	}
+	p := &fbPlugin{}
+	var doc inboxDoc
+	err := p.decodeResponse(resp, &doc)
+	c.Assert(err, NotNil)
+	jsonErr := err.(*json.SyntaxError)
+	c.Check(jsonErr.Offset, Equals, int64(1))
+}
+
+func (s *S) TestFilterNotifications(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	p := &fbPlugin{}
+	var doc inboxDoc
+	p.decodeResponse(resp, &doc)
+	var state fbState
+	notifications := p.filterNotifications(&doc, &state.LastInboxUpdate)
+	c.Check(notifications, HasLen, 3)
+	// check if the lastInboxUpdate is updated
+	c.Check(state.LastInboxUpdate, Equals, timeStamp("2014-08-25T18:39:32+0000"))
+}
+
+func (s *S) TestBuildPushMessages(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	var state fbState
+	p := &fbPlugin{state: state, accountId: 32}
+	var doc inboxDoc
+	p.decodeResponse(resp, &doc)
+	notifications := p.filterNotifications(&doc, &p.state.LastInboxUpdate)
+	pushMsgs := p.buildPushMessages(notifications, &doc, doc.size(), doc.size())
+	c.Check(pushMsgs, HasLen, doc.size())
+}
+
+func (s *S) TestBuildPushMessagesConsolidate(c *C) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+	}
+	var state fbState
+	p := &fbPlugin{state: state, accountId: 32}
+	var doc inboxDoc
+	p.decodeResponse(resp, &doc)
+	notifications := p.filterNotifications(&doc, &p.state.LastInboxUpdate)
+	max := doc.size() - 2
+	pushMsgs := p.buildPushMessages(notifications, &doc, max, max)
+	// we should get max + 1 messages
+	c.Check(pushMsgs, HasLen, max+1)
+}
+
+func (s *S) TestStateFromStorageInitialState(c *C) {
+	state, err := stateFromStorage(32)
+	c.Check(err, NotNil)
+	c.Check(state.LastUpdate, Equals, timeStamp(""))
+	c.Check(state.LastInboxUpdate, Equals, timeStamp(""))
+}
+
+func (s *S) TestStateFromStoragePersist(c *C) {
+	filePath := filepath.Join(s.tempDir, "facebook.test/facebook-32.json")
+	state, err := stateFromStorage(32)
+	c.Check(err, NotNil)
+	state.LastInboxUpdate = timeStamp("2014-08-25T18:39:32+0000")
+	state.LastUpdate = timeStamp("2014-08-25T18:39:33+0000")
+	err = state.persist(32)
+	c.Check(err, IsNil)
+	jsonData, err := ioutil.ReadFile(filePath)
+	c.Check(err, IsNil)
+	var data map[string]string
+	json.Unmarshal(jsonData, &data)
+	c.Check(data["last_inbox_update"], Equals, "2014-08-25T18:39:32+0000")
+	c.Check(data["last_notification_update"], Equals, "2014-08-25T18:39:33+0000")
+}
+
+func (s *S) TestStateFromStoragePersistFails(c *C) {
+	state := fbState{LastInboxUpdate: "2014-08-25T18:39:32+0000", LastUpdate: "2014-08-25T18:39:33+0000"}
+	plugins.XdgDataEnsure = plugins.XdgDataFind
+	err := state.persist(32)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestStateFromStorage(c *C) {
+	state := fbState{LastInboxUpdate: "2014-08-25T18:39:32+0000", LastUpdate: "2014-08-25T18:39:33+0000"}
+	err := state.persist(32)
+	c.Check(err, IsNil)
+	newState, err := stateFromStorage(32)
+	c.Check(err, IsNil)
+	c.Check(newState.LastUpdate, Equals, timeStamp("2014-08-25T18:39:33+0000"))
+	c.Check(newState.LastInboxUpdate, Equals, timeStamp("2014-08-25T18:39:32+0000"))
+	// bad format
+	state = fbState{LastInboxUpdate: "yesterday", LastUpdate: "2014-08-25T18:39:33+0000"}
+	state.persist(32)
+	_, err = stateFromStorage(32)
+	c.Check(err, NotNil)
+	state = fbState{LastInboxUpdate: "2014-08-25T18:39:33+0000", LastUpdate: "today"}
+	state.persist(32)
+	_, err = stateFromStorage(32)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestNew(c *C) {
+	state := fbState{LastInboxUpdate: "2014-08-25T18:39:32+0000", LastUpdate: "2014-08-25T18:39:33+0000"}
+	state.persist(32)
+	p := New(32)
+	fb := p.(*fbPlugin)
+	c.Check(fb.state, DeepEquals, state)
+	// with bad format
+	state = fbState{LastInboxUpdate: "hola", LastUpdate: "mundo"}
+	state.persist(32)
+	p = New(32)
+	fb = p.(*fbPlugin)
+	c.Check(fb.state, DeepEquals, state)
+}
+
+func (s *S) TestApplicationId(c *C) {
+	expected := plugins.ApplicationId("com.ubuntu.developer.webapps.webapp-facebook_webapp-facebook")
+	p := New(32)
+	c.Check(p.ApplicationId(), Equals, expected)
 }
