@@ -40,6 +40,7 @@ const (
 	consolidatedNotificationsIndexStart = maxIndividualNotifications
 	maxIndividualThreads                = 2
 	consolidatedThreadsIndexStart       = maxIndividualThreads
+	timeOffset                          = -5
 	pluginName                          = "facebook"
 )
 
@@ -386,7 +387,8 @@ func (t *thread) buildPushMessage() *plugins.PushMessage {
 }
 
 func (t *thread) isValid(tStamp timeStamp) bool {
-	return !(t.UpdatedTime <= tStamp || t.Unread == 0 || t.Unseen == 0)
+	limit := timeStamp(time.Now().Add(timeOffset * time.Minute).Format(facebookTime))
+	return tStamp < t.UpdatedTime && t.UpdatedTime < limit && t.Unread != 0 && t.Unseen != 0
 }
 
 func (t *thread) updatedTime() timeStamp {

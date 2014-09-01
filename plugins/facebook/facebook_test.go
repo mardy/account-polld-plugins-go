@@ -25,6 +25,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
+
 	"testing"
 
 	. "launchpad.net/gocheck"
@@ -592,4 +594,25 @@ func (s *S) TestApplicationId(c *C) {
 	expected := plugins.ApplicationId("com.ubuntu.developer.webapps.webapp-facebook_webapp-facebook")
 	p := New(32)
 	c.Check(p.ApplicationId(), Equals, expected)
+}
+
+func (s *S) TestThreadIsValid(c *C) {
+	t := thread{}
+	t.Unseen = 1
+	t.Unread = 2
+    // 10m before Now, the thread should be valid
+	t.UpdatedTime = timeStamp(time.Now().Add(-10 * time.Minute).Format(facebookTime))
+	tStamp := timeStamp(time.Now().Add(-20 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, true)
+    // 2m before Now, the thread should be invalid
+	t.UpdatedTime = timeStamp(time.Now().Add(-2 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, false)
+    // unseen = 0
+    t.Unseen = 0
+	t.UpdatedTime = timeStamp(time.Now().Add(-10 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, false)
+    // unread = 0, unseen = 1
+    t.Unread = 0
+    t.Unseen = 1
+	c.Check(t.isValid(tStamp), Equals, false)
 }
