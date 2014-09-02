@@ -81,6 +81,21 @@ type fbPlugin struct {
 	accountId uint
 }
 
+var doRequest = request
+
+func request(authData *accounts.AuthData, path string) (*http.Response, error) {
+	// Resolve path relative to Graph API base URL, and add access token
+	u, err := baseUrl.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+	query := u.Query()
+	query.Add("access_token", authData.AccessToken)
+	u.RawQuery = query.Encode()
+
+	return http.Get(u.String())
+}
+
 func New(accountId uint) plugins.Plugin {
 	state, err := stateFromStorage(accountId)
 	if err != nil {
@@ -93,19 +108,6 @@ func New(accountId uint) plugins.Plugin {
 
 func (p *fbPlugin) ApplicationId() plugins.ApplicationId {
 	return "com.ubuntu.developer.webapps.webapp-facebook_webapp-facebook"
-}
-
-func (p *fbPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
-	// Resolve path relative to Graph API base URL, and add access token
-	u, err := baseUrl.Parse(path)
-	if err != nil {
-		return nil, err
-	}
-	query := u.Query()
-	query.Add("access_token", authData.AccessToken)
-	u.RawQuery = query.Encode()
-
-	return http.Get(u.String())
 }
 
 func (p *fbPlugin) decodeResponse(resp *http.Response, result interface{}) error {
@@ -197,7 +199,7 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 }
 
 func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
-	resp, err := p.request(authData, "me/notifications")
+	resp, err := doRequest(authData, "me/notifications")
 	if err != nil {
 		log.Println("facebook plugin: notifications poll failed: ", err)
 		return nil, err
@@ -211,7 +213,7 @@ func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.Push
 }
 
 func (p *fbPlugin) getInbox(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
-	resp, err := p.request(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
+	resp, err := doRequest(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
 	if err != nil {
 		log.Println("facebook plugin: inbox poll failed: ", err)
 		return nil, err
