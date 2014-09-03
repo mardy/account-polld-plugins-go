@@ -8,19 +8,19 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-28 15:32-0300\n"
-"PO-Revision-Date: 2014-08-15 07:05+0000\n"
-"Last-Translator: Víctor R. Ruiz <Unknown>\n"
+"PO-Revision-Date: 2014-09-02 08:22+0000\n"
+"Last-Translator: Adolfo Jayme <fitoschido@gmail.com>\n"
 "Language-Team: Spanish <es@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-08-30 08:35+0000\n"
-"X-Generator: Launchpad (build 17176)\n"
+"X-Launchpad-Export-Date: 2014-09-03 07:28+0000\n"
+"X-Generator: Launchpad (build 17196)\n"
 
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:367
 msgid "Multiple more messages"
-msgstr ""
+msgstr "Muchos más mensajes"
 
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
 #. TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -83,7 +83,7 @@ msgstr "Más mensajes sin leer"
 #: plugins/gmail/gmail.go:184
 #, c-format
 msgid "You have an approximate of %d additional unread messages"
-msgstr "Tienes aproximadamente %d correos sin leer"
+msgstr "Hay aproximadamente %d mensajes sin leer"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
