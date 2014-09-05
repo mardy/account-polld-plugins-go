@@ -8,19 +8,19 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-08-28 15:32-0300\n"
-"PO-Revision-Date: 2014-08-04 13:39+0000\n"
+"PO-Revision-Date: 2014-09-04 18:47+0000\n"
 "Last-Translator: Ibai Oihanguren Sala <Unknown>\n"
 "Language-Team: Basque <eu@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-08-30 08:35+0000\n"
-"X-Generator: Launchpad (build 17176)\n"
+"X-Launchpad-Export-Date: 2014-09-05 01:11+0000\n"
+"X-Generator: Launchpad (build 17196)\n"
 
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:367
 msgid "Multiple more messages"
-msgstr ""
+msgstr "Hainbat mezu gehiago"
 
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
 #. TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -34,7 +34,7 @@ msgstr "Nork: %s"
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:415
 msgid "Multiple more notifications"
-msgstr ""
+msgstr "Hainbat jakinarazpen gehiago"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:113 plugins/twitter/twitter.go:170
@@ -77,22 +77,22 @@ msgstr ""
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:180
 msgid "More unread emails available"
-msgstr ""
+msgstr "Irakurri gabeko mezu gehiago"
 
 #. TRANSLATORS: the first %d refers to approximate additionl email message count
 #: plugins/gmail/gmail.go:184
 #, c-format
 msgid "You have an approximate of %d additional unread messages"
-msgstr ""
+msgstr "Batez beste irakurri gabeko %d mezu gehiago dituzu"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr ""
+msgstr "Jakinarazpenak"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
-msgstr ""
+msgstr "Kontuaren zundaketa"
 
 #: data/account-polld.application.tr.h:2
 msgid "Receive notifications for this account"
-msgstr ""
+msgstr "Jaso kontu honentzako jakinarazpenak"
