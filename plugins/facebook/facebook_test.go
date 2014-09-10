@@ -19,22 +19,29 @@ package facebook
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
+
+	"net/http/httptest"
 	"testing"
 
 	. "launchpad.net/gocheck"
 
+	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/go-xdg/v0"
 )
 
 type S struct {
 	tempDir string
+	ts      *httptest.Server
 }
 
 var _ = Suite(&S{})
@@ -328,11 +335,17 @@ func (s *S) SetUpTest(c *C) {
 		}
 		return p, nil
 	}
+	s.ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	baseUrl, _ = url.Parse(s.ts.URL)
 }
 
 func (s *S) TearDownTest(c *C) {
 	plugins.XdgDataFind = xdg.Data.Find
 	plugins.XdgDataEnsure = xdg.Data.Find
+	doRequest = request
+	s.ts.Close()
 }
 
 func (s *S) TestParseNotifications(c *C) {
@@ -592,4 +605,204 @@ func (s *S) TestApplicationId(c *C) {
 	expected := plugins.ApplicationId("com.ubuntu.developer.webapps.webapp-facebook_webapp-facebook")
 	p := New(32)
 	c.Check(p.ApplicationId(), Equals, expected)
+}
+
+func (s *S) TestThreadIsValid(c *C) {
+	t := thread{}
+	t.Unseen = 1
+	t.Unread = 2
+	// 10m before Now, the thread should be valid
+	t.UpdatedTime = timeStamp(time.Now().Add(-10 * time.Minute).Format(facebookTime))
+	tStamp := timeStamp(time.Now().Add(-20 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, true)
+	// 2m before Now, the thread should be invalid
+	t.UpdatedTime = timeStamp(time.Now().Add(-2 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, false)
+	// unseen = 0
+	t.Unseen = 0
+	t.UpdatedTime = timeStamp(time.Now().Add(-10 * time.Minute).Format(facebookTime))
+	c.Check(t.isValid(tStamp), Equals, false)
+	// unread = 0, unseen = 1
+	t.Unread = 0
+	t.Unseen = 1
+	c.Check(t.isValid(tStamp), Equals, false)
+}
+
+func (s *S) TestGetInbox(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	msgs, err := p.getInbox(&authData)
+	c.Check(err, IsNil)
+	c.Check(msgs, HasLen, 3)
+}
+
+func (s *S) TestGetInboxRequestFails(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       closeWrapper{bytes.NewReader([]byte(""))},
+		}, fmt.Errorf("please, fail")
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.getInbox(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestGetInboxParseResponseFails(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte("hola" + inboxBody))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.getInbox(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestGetNotifications(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	msgs, err := p.getNotifications(&authData)
+	c.Check(err, IsNil)
+	c.Check(msgs, HasLen, 2)
+}
+
+func (s *S) TestGetNotificationsRequestFails(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       closeWrapper{bytes.NewReader([]byte(""))},
+		}, fmt.Errorf("please, fail")
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.getNotifications(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestGetNotificationsParseResponseFails(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte("hola" + notificationsBody))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.getNotifications(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestPoll(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		body := inboxBody
+		if url == "me/notifications" {
+			body = notificationsBody
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte(body))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	msgs, err := p.Poll(&authData)
+	c.Check(err, IsNil)
+	c.Check(msgs, HasLen, 5)
+}
+
+func (s *S) TestPollSingleError(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		body := inboxBody
+		if url == "me/notifications" {
+			body = "hola" + notificationsBody
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte(body))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	msgs, err := p.Poll(&authData)
+	c.Check(err, IsNil)
+	c.Check(msgs, HasLen, 3)
+}
+
+func (s *S) TestPollError(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		body := "hola" + inboxBody
+		if url == "me/notifications" {
+			body = "hola" + notificationsBody
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       closeWrapper{bytes.NewReader([]byte(body))},
+		}, nil
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.Poll(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestPollUseEnvToken(c *C) {
+	doRequest = func(a *accounts.AuthData, url string) (*http.Response, error) {
+		c.Check(a.AccessToken, Equals, "bar")
+		return nil, fmt.Errorf("please, fail")
+	}
+	var state fbState
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	os.Setenv("ACCOUNT_POLLD_TOKEN_FACEBOOK", "bar")
+	// defer the unset
+	defer os.Setenv("ACCOUNT_POLLD_TOKEN_FACEBOOK", "")
+	p := &fbPlugin{state: state, accountId: 32}
+	_, err := p.Poll(&authData)
+	c.Check(err, NotNil)
+}
+
+func (s *S) TestRequest(c *C) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+	baseUrl, _ = url.Parse(ts.URL)
+	authData := accounts.AuthData{}
+	authData.AccessToken = "foo"
+	_, err := request(&authData, "me/notifications")
+	c.Check(err, IsNil)
 }
