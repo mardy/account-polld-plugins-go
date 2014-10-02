@@ -44,7 +44,7 @@ type PostWatch struct {
 /* Use identifiers and API keys provided by the respective webapps which are the official
    end points for the notifications */
 const (
-	SERVICETYPE_WEBAPPS  = "webapps"
+	SERVICETYPE_WEBAPPS = "webapps"
 
 	SERVICENAME_GMAIL    = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER  = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
@@ -96,7 +96,7 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
-    // Note: the accounts monitored are all linked to webapps right now
+	// Note: the accounts monitored are all linked to webapps right now
 	watcher := accounts.NewWatcher(SERVICETYPE_WEBAPPS)
 	mgr := make(map[uint]*AccountManager)
 

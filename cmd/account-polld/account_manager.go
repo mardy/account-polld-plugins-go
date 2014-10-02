@@ -24,6 +24,7 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/ubuntu-push/click"
+	"launchpad.net/ubuntu-push/click/cblacklist"
 )
 
 type AccountManager struct {
@@ -42,6 +43,8 @@ var (
 	bootstrapPollTimeout = time.Duration(5 * time.Minute)
 	maxCounter           = 4
 )
+
+var isBlacklisted = cblacklist.IsBlacklisted
 
 func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
@@ -66,6 +69,12 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			return
 		}
 	}
+
+	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
+		log.Printf("Account %d is blacklisted, not polling", a.authData.AccountId)
+		return
+	}
+
 	if a.penaltyCount > 0 {
 		log.Printf("Leaving poll for account %d as penaly count is %d", a.authData.AccountId, a.penaltyCount)
 		a.penaltyCount--
