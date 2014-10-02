@@ -21,16 +21,7 @@ override_dh_auto_install:
 		${CURDIR}/debian/account-polld/usr/share/gocode
 	# setup online accounts service files
 	mkdir -p \
-		${CURDIR}/debian/account-polld/usr/share/accounts/applications \
-		${CURDIR}/debian/account-polld/usr/share/accounts/services \
-		${CURDIR}/debian/account-polld/usr/share/accounts/service_types \
 		${CURDIR}/debian/account-polld/usr/share/applications
-	cp ${CURDIR}/data/account-polld.application \
-		${CURDIR}/debian/account-polld/usr/share/accounts/applications/
-	cp ${CURDIR}/data/*.service \
-		${CURDIR}/debian/account-polld/usr/share/accounts/services/
-	cp ${CURDIR}/data/account-polld.service-type \
-		${CURDIR}/debian/account-polld/usr/share/accounts/service_types/
 	cp ${CURDIR}/data/account-polld.desktop \
 		${CURDIR}/debian/account-polld/usr/share/applications/
 	# translations
