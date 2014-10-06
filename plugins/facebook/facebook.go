@@ -398,7 +398,7 @@ func (t *thread) updatedTime() timeStamp {
 }
 
 func (t *thread) String() string {
-	return fmt.Sprintf("id: %s, dated: %s, unread: %d", t.Id, t.UpdatedTime, t.Unread)
+	return fmt.Sprintf("id: %s, dated: %s, unread: %d, unseen: %d", t.Id, t.UpdatedTime, t.Unread, t.Unseen)
 }
 
 func (doc *notificationDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
