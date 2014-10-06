@@ -1,3 +1,16 @@
+account-polld (0.1+14.10.20141006.1-0ubuntu1) utopic; urgency=low
+
+  [ Guillermo Gonzalez ]
+  * Log unseen value when skipping a message
+
+  [ Roberto Alsina ]
+  * Use identifiers and API keys provided by the respective webapps
+    which are the official end points for the notifications. Respect
+    blacklist gsetting to skip polling for notifications that are not
+    going to be shown .
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 06 Oct 2014 19:14:06 +0000
+
 account-polld (0.1+14.10.20140910-0ubuntu1) utopic; urgency=low
 
   [ Guillermo Gonzalez ]
