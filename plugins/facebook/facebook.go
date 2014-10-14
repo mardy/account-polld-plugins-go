@@ -148,36 +148,20 @@ func (p *fbPlugin) filterNotifications(doc Document, lastUpdate *timeStamp) []No
 	return validNotifications
 }
 
-func (p *fbPlugin) buildPushMessages(notifications []Notification, doc Document, max int, consolidatedIndexStart int) []plugins.PushMessage {
-	pushMsg := []plugins.PushMessage{}
-	for _, n := range notifications {
-		msg := n.buildPushMessage()
-		pushMsg = append(pushMsg, *msg)
-		if len(pushMsg) == max {
-			break
-		}
+func (p *fbPlugin) buildPushMessages(notifications []Notification, doc Document, max int, consolidatedIndexStart int) *plugins.PushMessageBatch {
+	pushMsg := make([]*plugins.PushMessage, len(notifications))
+	for i, n := range notifications {
+		pushMsg[i] = n.buildPushMessage()
 	}
-	// Now we consolidate the remaining statuses
-	if len(notifications) > len(pushMsg) && len(notifications) >= consolidatedIndexStart {
-		usernamesMap := doc.getConsolidatedMessagesUsernames(consolidatedIndexStart)
-		usernames := []string{}
-		for _, v := range usernamesMap {
-			usernames = append(usernames, v)
-			// we don't too many usernames listed, this is a hard number
-			if len(usernames) > 10 {
-				usernames = append(usernames, "...")
-				break
-			}
-		}
-		if len(usernames) > 0 {
-			consolidatedMsg := doc.getConsolidatedMessage(usernames)
-			pushMsg = append(pushMsg, *consolidatedMsg)
-		}
+	return &plugins.PushMessageBatch{
+		Messages:        pushMsg,
+		Limit:           max,
+		OverflowHandler: doc.handleOverflow,
+		Tag:             doc.getTag(),
 	}
-	return pushMsg
 }
 
-func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+func (p *fbPlugin) parseResponse(resp *http.Response) (*plugins.PushMessageBatch, error) {
 	var result notificationDoc
 	if err := p.decodeResponse(resp, &result); err != nil {
 		return nil, err
@@ -188,7 +172,7 @@ func (p *fbPlugin) parseResponse(resp *http.Response) ([]plugins.PushMessage, er
 	return pushMsgs, nil
 }
 
-func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessage, error) {
+func (p *fbPlugin) parseInboxResponse(resp *http.Response) (*plugins.PushMessageBatch, error) {
 	var result inboxDoc
 	if err := p.decodeResponse(resp, &result); err != nil {
 		return nil, err
@@ -198,7 +182,7 @@ func (p *fbPlugin) parseInboxResponse(resp *http.Response) ([]plugins.PushMessag
 	return pushMsgs, nil
 }
 
-func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+func (p *fbPlugin) getNotifications(authData *accounts.AuthData) (*plugins.PushMessageBatch, error) {
 	resp, err := doRequest(authData, "me/notifications")
 	if err != nil {
 		log.Println("facebook plugin: notifications poll failed: ", err)
@@ -212,7 +196,7 @@ func (p *fbPlugin) getNotifications(authData *accounts.AuthData) ([]plugins.Push
 	return notifications, nil
 }
 
-func (p *fbPlugin) getInbox(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+func (p *fbPlugin) getInbox(authData *accounts.AuthData) (*plugins.PushMessageBatch, error) {
 	resp, err := doRequest(authData, "me/inbox?fields=unread,unseen,comments.limit(1)")
 	if err != nil {
 		log.Println("facebook plugin: inbox poll failed: ", err)
@@ -226,7 +210,7 @@ func (p *fbPlugin) getInbox(authData *accounts.AuthData) ([]plugins.PushMessage,
 	return inbox, nil
 }
 
-func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_FACEBOOK"); token != "" {
 		authData.AccessToken = token
@@ -237,8 +221,13 @@ func (p *fbPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, err
 	if notifErr != nil && inboxErr != nil {
 		return nil, fmt.Errorf("poll failed with '%s' and '%s'", notifErr, inboxErr)
 	}
-	messages := append(notifications, inbox...)
-	return messages, nil
+	if notifErr != nil {
+		return []*plugins.PushMessageBatch{inbox}, nil
+	}
+	if inboxErr != nil {
+		return []*plugins.PushMessageBatch{notifications}, nil
+	}
+	return []*plugins.PushMessageBatch{notifications, inbox}, nil
 }
 
 func toEpoch(stamp timeStamp) int64 {
@@ -350,19 +339,19 @@ type message struct {
 	Message     string    `json:message`
 }
 
-func (doc *inboxDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
-	usernamesMap := make(map[string]string)
-	for _, t := range doc.Data[idxStart-1:] {
-		message := t.Comments.Data[0]
-		userId := message.From.Id
-		if _, ok := usernamesMap[userId]; !ok {
-			usernamesMap[userId] = message.From.Name
-		}
-	}
-	return usernamesMap
+func (doc *inboxDoc) getTag() string {
+	return "inbox"
 }
 
-func (doc *inboxDoc) getConsolidatedMessage(usernames []string) *plugins.PushMessage {
+func (doc *inboxDoc) handleOverflow(pushMsg []*plugins.PushMessage) *plugins.PushMessage {
+	usernames := []string{}
+	for _, m := range pushMsg {
+		usernames = append(usernames, m.Notification.Card.Summary)
+		if len(usernames) > 10 {
+			usernames[10] = "…"
+			break
+		}
+	}
 	// TRANSLATORS: This represents a message summary about more facebook messages
 	summary := gettext.Gettext("Multiple more messages")
 	// TRANSLATORS: This represents a message body with the comma separated facebook usernames
@@ -401,17 +390,19 @@ func (t *thread) String() string {
 	return fmt.Sprintf("id: %s, dated: %s, unread: %d, unseen: %d", t.Id, t.UpdatedTime, t.Unread, t.Unseen)
 }
 
-func (doc *notificationDoc) getConsolidatedMessagesUsernames(idxStart int) map[string]string {
-	usernamesMap := make(map[string]string)
-	for _, n := range doc.Data[idxStart:] {
-		if _, ok := usernamesMap[n.From.Id]; !ok {
-			usernamesMap[n.From.Id] = n.From.Name
-		}
-	}
-	return usernamesMap
+func (doc *notificationDoc) getTag() string {
+	return "notification"
 }
 
-func (doc *notificationDoc) getConsolidatedMessage(usernames []string) *plugins.PushMessage {
+func (doc *notificationDoc) handleOverflow(pushMsg []*plugins.PushMessage) *plugins.PushMessage {
+	usernames := []string{}
+	for _, m := range pushMsg {
+		usernames = append(usernames, m.Notification.Card.Summary)
+		if len(usernames) > 10 {
+			usernames[10] = "…"
+			break
+		}
+	}
 	// TRANSLATORS: This represents a notification summary about more facebook notifications
 	summary := gettext.Gettext("Multiple more notifications")
 	// TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -447,8 +438,8 @@ func (n *notification) String() string {
 }
 
 type Document interface {
-	getConsolidatedMessage([]string) *plugins.PushMessage
-	getConsolidatedMessagesUsernames(int) map[string]string
+	getTag() string
+	handleOverflow([]*plugins.PushMessage) *plugins.PushMessage
 	size() int
 	notification(int) Notification
 }

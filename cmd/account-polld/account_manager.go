@@ -120,7 +120,7 @@ func (a *AccountManager) poll() {
 		return
 	}
 
-	if n, err := a.plugin.Poll(&a.authData); err != nil {
+	if bs, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
 
 		// If the error indicates that the authentication
@@ -132,10 +132,10 @@ func (a *AccountManager) poll() {
 		}
 		a.doneChan <- err
 	} else {
-		log.Println("Account", a.authData.AccountId, "has", len(n), "updates to report")
-		if len(n) > 0 {
-			a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
+		for _, b := range bs {
+			log.Println("Account", a.authData.AccountId, "has", len(b.Messages), b.Tag, "updates to report")
 		}
+		a.postWatch <- &PostWatch{batches: bs, appId: a.plugin.ApplicationId()}
 		a.doneChan <- nil
 	}
 }

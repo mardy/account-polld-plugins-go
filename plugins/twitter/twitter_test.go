@@ -411,8 +411,10 @@ func (s S) TestParseStatuses(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(statusesBody))},
 	}
 	p := &twitterPlugin{}
-	messages, err := p.parseStatuses(resp)
+	batch, err := p.parseStatuses(resp)
 	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
 	c.Assert(len(messages), Equals, 2)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Andrew Spode Miller. @spode")
 	c.Check(messages[0].Notification.Card.Body, Equals, "@jasoncosta @themattharris Hey! Going to be in Frisco in October. Was hoping to have a meeting to talk about @thinkwall if you're around?")
@@ -459,8 +461,10 @@ func (s S) TestParseDirectMessages(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(directMessagesBody))},
 	}
 	p := &twitterPlugin{}
-	messages, err := p.parseDirectMessages(resp)
+	batch, err := p.parseDirectMessages(resp)
 	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
 	c.Assert(len(messages), Equals, 1)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sean Cook. @theSeanCook")
 	c.Check(messages[0].Notification.Card.Body, Equals, "booyakasha")

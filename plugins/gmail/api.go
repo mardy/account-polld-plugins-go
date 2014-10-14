@@ -26,7 +26,7 @@ import (
 
 const gmailTime = "Mon, 2 Jan 2006 15:04:05 -0700"
 
-type pushes map[string]plugins.PushMessage
+type pushes map[string]*plugins.PushMessage
 type headers map[string]string
 
 // messageList holds a response to call to Users.messages: list
