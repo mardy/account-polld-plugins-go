@@ -1,4 +1,4 @@
-# Catalan (Valencian) translation for account-polld
+# Catalan translation for account-polld
 # Copyright (c) 2014 Rosetta Contributors and Canonical Ltd 2014
 # This file is distributed under the same license as the account-polld package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2014.
@@ -8,19 +8,19 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-09-01 17:45-0300\n"
-"PO-Revision-Date: 2014-10-17 05:41+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: Catalan (Valencian) <ca@valencia@li.org>\n"
+"PO-Revision-Date: 2014-10-17 14:24+0000\n"
+"Last-Translator: David Planella <david.planella@ubuntu.com>\n"
+"Language-Team: Catalan <ca@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2014-10-17 06:26+0000\n"
+"X-Launchpad-Export-Date: 2014-10-18 07:20+0000\n"
 "X-Generator: Launchpad (build 17196)\n"
 
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:365
 msgid "Multiple more messages"
-msgstr ""
+msgstr "Més notificacions múltiples"
 
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
 #. TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -29,40 +29,40 @@ msgstr ""
 #: plugins/twitter/twitter.go:130 plugins/twitter/twitter.go:187
 #, c-format
 msgid "From %s"
-msgstr ""
+msgstr "De %s"
 
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:414
 msgid "Multiple more notifications"
-msgstr ""
+msgstr "Més notifications"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:113 plugins/twitter/twitter.go:170
 #, c-format
 msgid "%s. @%s"
-msgstr ""
+msgstr "%s. @%s"
 
 #. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:128
 msgid "Multiple more mentions"
-msgstr ""
+msgstr "Diverses mencions"
 
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:185
 msgid "Multiple direct messages available"
-msgstr ""
+msgstr "Diversos missatges directes"
 
 #. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 #: plugins/gmail/gmail.go:157
 #, c-format
 msgid ", %s"
-msgstr ""
+msgstr ", %s"
 
 #. TRANSLATORS: the %s is the "from" header corresponding to a specific email
 #: plugins/gmail/gmail.go:160
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #. TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 #: plugins/gmail/gmail.go:162
@@ -71,26 +71,28 @@ msgid ""
 "%s\n"
 "%s"
 msgstr ""
+"%s\n"
+"%s"
 
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:180
 msgid "More unread emails available"
-msgstr ""
+msgstr "Hi ha més correus per llegir disponibles"
 
 #. TRANSLATORS: the first %d refers to approximate additionl email message count
 #: plugins/gmail/gmail.go:184
 #, c-format
 msgid "You have an approximate of %d additional unread messages"
-msgstr ""
+msgstr "Teniu uns altres %d missatges sense llegir"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr ""
+msgstr "Notificacions"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
-msgstr ""
+msgstr "Consulta de comptes"
 
 #: data/account-polld.application.tr.h:2
 msgid "Receive notifications for this account"
-msgstr ""
+msgstr "Vull rebre notificacions per a este compte"
