@@ -1,6 +1,7 @@
 /*
  Copyright 2014 Canonical Ltd.
  Authors: Sergio Schvezov <sergio.schvezov@canonical.com>
+ Authors: Niklas Wenzel <nikwen.developer@gmail.com>
 
  This program is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License version 3, as published
@@ -112,11 +113,6 @@ func (a *AccountManager) poll() {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
 			a.plugin.ApplicationId(), "is not installed")
-		return
-	}
-
-	if a.authData.Error != nil {
-		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
 		return
 	}
 
