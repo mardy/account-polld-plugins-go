@@ -1,6 +1,7 @@
 /*
  Copyright 2014 Canonical Ltd.
  Authors: Sergio Schvezov <sergio.schvezov@canonical.com>
+          Niklas Wenzel <nikwen.developer@gmail.com>
 
  This program is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License version 3, as published
@@ -100,14 +101,22 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watcher := accounts.NewWatcher(SERVICETYPE_WEBAPPS)
 	mgr := make(map[uint]*AccountManager)
 
+	var wg sync.WaitGroup
 L:
 	for {
 		select {
 		case data := <-watcher.C:
 			if account, ok := mgr[data.AccountId]; ok {
 				if data.Enabled {
+					wg.Add(1)
 					log.Println("New account data for existing account with id", data.AccountId)
+					account.authData.Error = nil
+					account.penaltyCount = 0
 					account.updateAuthData(data)
+					go func() {
+						defer wg.Done()
+						account.Poll(false)
+					}()
 				} else {
 					account.Delete()
 					delete(mgr, data.AccountId)
@@ -130,12 +139,15 @@ L:
 					log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 					continue L
 				}
+				wg.Add(1)
 				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
 				mgr[data.AccountId].updateAuthData(data)
-				mgr[data.AccountId].Poll(true)
+				go func() {
+					defer wg.Done()
+					mgr[data.AccountId].Poll(true)
+				}()
 			}
 		case <-pollBus.PollChan:
-			var wg sync.WaitGroup
 			for _, v := range mgr {
 				wg.Add(1)
 				poll := v.Poll
@@ -144,9 +156,9 @@ L:
 					poll(false)
 				}()
 			}
-			wg.Wait()
-			pollBus.SignalDone()
 		}
+		wg.Wait()
+		pollBus.SignalDone()
 	}
 }
 
