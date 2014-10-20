@@ -94,7 +94,6 @@ func (a *AccountManager) Poll(bootstrap bool) {
 		a.penaltyCount++
 	case err := <-a.doneChan:
 		if err == nil {
-			log.Println("Poll for account", a.authData.AccountId, "was successful")
 			a.penaltyCount = 0
 		} else {
 			log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
@@ -112,11 +111,13 @@ func (a *AccountManager) poll() {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
 			a.plugin.ApplicationId(), "is not installed")
+		a.doneChan <- nil // Needed to not cause a timeout in the Poll() function
 		return
 	}
 
 	if a.authData.Error != nil {
 		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
+		a.doneChan <- nil // Needed to not cause a timeout in the Poll() function
 		return
 	}
 
@@ -136,6 +137,7 @@ func (a *AccountManager) poll() {
 		if len(n) > 0 {
 			a.postWatch <- &PostWatch{messages: n, appId: a.plugin.ApplicationId()}
 		}
+		log.Println("Poll for account", a.authData.AccountId, "was successful")
 		a.doneChan <- nil
 	}
 }
