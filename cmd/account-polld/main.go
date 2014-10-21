@@ -113,10 +113,10 @@ L:
 					account.authData.Error = nil
 					account.penaltyCount = 0
 					account.updateAuthData(data)
-					go func() {
+					go func(id uint) {
 						defer wg.Done()
-						account.Poll(false)
-					}()
+						mgr[id].Poll(false)
+					}(data.AccountId)
 				} else {
 					account.Delete()
 					delete(mgr, data.AccountId)
@@ -142,19 +142,18 @@ L:
 				wg.Add(1)
 				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
 				mgr[data.AccountId].updateAuthData(data)
-				go func() {
+				go func(id uint) {
 					defer wg.Done()
-					mgr[data.AccountId].Poll(true)
-				}()
+					mgr[id].Poll(true)
+				}(data.AccountId)
 			}
 		case <-pollBus.PollChan:
 			for _, v := range mgr {
 				wg.Add(1)
-				poll := v.Poll
-				go func() {
+				go func(poll func(bool)) {
 					defer wg.Done()
 					poll(false)
-				}()
+				}(v.Poll)
 			}
 		}
 		wg.Wait()
