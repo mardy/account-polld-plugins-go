@@ -101,22 +101,14 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watcher := accounts.NewWatcher(SERVICETYPE_WEBAPPS)
 	mgr := make(map[uint]*AccountManager)
 
-	var wg sync.WaitGroup
 L:
 	for {
 		select {
 		case data := <-watcher.C:
 			if account, ok := mgr[data.AccountId]; ok {
 				if data.Enabled {
-					wg.Add(1)
 					log.Println("New account data for existing account with id", data.AccountId)
-					account.authData.Error = nil
-					account.penaltyCount = 0
 					account.updateAuthData(data)
-					go func(id uint) {
-						defer wg.Done()
-						mgr[id].Poll(false)
-					}(data.AccountId)
 				} else {
 					account.Delete()
 					delete(mgr, data.AccountId)
@@ -139,25 +131,23 @@ L:
 					log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 					continue L
 				}
-				wg.Add(1)
 				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
 				mgr[data.AccountId].updateAuthData(data)
-				go func(id uint) {
-					defer wg.Done()
-					mgr[id].Poll(true)
-				}(data.AccountId)
+				mgr[data.AccountId].Poll(true)
 			}
 		case <-pollBus.PollChan:
+			var wg sync.WaitGroup
 			for _, v := range mgr {
 				wg.Add(1)
-				go func(poll func(bool)) {
+				poll := v.Poll
+				go func() {
 					defer wg.Done()
 					poll(false)
-				}(v.Poll)
+				}()
 			}
+			wg.Wait()
+			pollBus.SignalDone()
 		}
-		wg.Wait()
-		pollBus.SignalDone()
 	}
 }
 
