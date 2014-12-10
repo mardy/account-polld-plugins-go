@@ -78,7 +78,7 @@ func (p *twitterPlugin) request(authData *accounts.AuthData, path string) (*http
 	return client.Get(http.DefaultClient, token, u.String(), query)
 }
 
-func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessage, error) {
+func (p *twitterPlugin) parseStatuses(resp *http.Response) (*plugins.PushMessageBatch, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
@@ -107,35 +107,38 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) ([]plugins.PushMessag
 	}
 	p.lastMentionId = statuses[0].Id
 
-	pushMsg := []plugins.PushMessage{}
-	for _, s := range statuses {
+	pushMsg := make([]*plugins.PushMessage, len(statuses))
+	for i, s := range statuses {
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), s.User.Name, s.User.ScreenName)
 		action := fmt.Sprintf("%s/%s/statuses/%d", twitterDispatchUrlBase, s.User.ScreenName, s.Id)
 		epoch := toEpoch(s.CreatedAt)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image, epoch))
-		if len(pushMsg) == maxIndividualStatuses {
-			break
-		}
+		pushMsg[i] = plugins.NewStandardPushMessage(summary, s.Text, action, s.User.Image, epoch)
 	}
-	// Now we consolidate the remaining statuses
-	if len(statuses) > len(pushMsg) {
-		var screennames []string
-		for _, s := range statuses[consolidatedStatusIndexStart:] {
-			screennames = append(screennames, "@"+s.User.ScreenName)
-		}
-		// TRANSLATORS: This represents a notification summary about more twitter mentions available
-		summary := gettext.Gettext("Multiple more mentions")
-		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
-		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
-		action := fmt.Sprintf("%s/i/connect", twitterDispatchUrlBase)
-		epoch := time.Now().Unix()
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
-	}
-	return pushMsg, nil
+	return &plugins.PushMessageBatch{
+		Messages:        pushMsg,
+		Limit:           maxIndividualStatuses,
+		OverflowHandler: p.consolidateStatuses,
+		Tag:             "status",
+	}, nil
 }
 
-func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.PushMessage, error) {
+func (p *twitterPlugin) consolidateStatuses(pushMsg []*plugins.PushMessage) *plugins.PushMessage {
+	screennames := make([]string, len(pushMsg))
+	for i, m := range pushMsg {
+		screennames[i] = m.Notification.Card.Summary
+	}
+	// TRANSLATORS: This represents a notification summary about more twitter mentions available
+	summary := gettext.Gettext("Multiple more mentions")
+	// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
+	body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(screennames, ", "))
+	action := fmt.Sprintf("%s/i/connect", twitterDispatchUrlBase)
+	epoch := time.Now().Unix()
+
+	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+}
+
+func (p *twitterPlugin) parseDirectMessages(resp *http.Response) (*plugins.PushMessageBatch, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
@@ -164,35 +167,39 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) ([]plugins.Push
 	}
 	p.lastDirectMessageId = dms[0].Id
 
-	pushMsg := []plugins.PushMessage{}
-	for _, m := range dms {
+	pushMsg := make([]*plugins.PushMessage, len(dms))
+	for i, m := range dms {
 		// TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 		summary := fmt.Sprintf(gettext.Gettext("%s. @%s"), m.Sender.Name, m.Sender.ScreenName)
 		action := fmt.Sprintf("%s/%s/messages", twitterDispatchUrlBase, m.Sender.ScreenName)
 		epoch := toEpoch(m.CreatedAt)
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image, epoch))
-		if len(pushMsg) == maxIndividualDirectMessages {
-			break
-		}
+		pushMsg[i] = plugins.NewStandardPushMessage(summary, m.Text, action, m.Sender.Image, epoch)
 	}
-	// Now we consolidate the remaining messages
-	if len(dms) > len(pushMsg) {
-		var senders []string
-		for _, m := range dms[consolidatedDirectMessageIndexStart:] {
-			senders = append(senders, "@"+m.Sender.ScreenName)
-		}
-		// TRANSLATORS: This represents a notification summary about more twitter direct messages available
-		summary := gettext.Gettext("Multiple direct messages available")
-		// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
-		body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
-		action := fmt.Sprintf("%s/messages", twitterDispatchUrlBase)
-		epoch := time.Now().Unix()
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
-	}
-	return pushMsg, nil
+
+	return &plugins.PushMessageBatch{
+		Messages:        pushMsg,
+		Limit:           maxIndividualDirectMessages,
+		OverflowHandler: p.consolidateDirectMessages,
+		Tag:             "direct-message",
+	}, nil
 }
 
-func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.PushMessage, err error) {
+func (p *twitterPlugin) consolidateDirectMessages(pushMsg []*plugins.PushMessage) *plugins.PushMessage {
+	senders := make([]string, len(pushMsg))
+	for i, m := range pushMsg {
+		senders[i] = m.Notification.Card.Summary
+	}
+	// TRANSLATORS: This represents a notification summary about more twitter direct messages available
+	summary := gettext.Gettext("Multiple direct messages available")
+	// TRANSLATORS: This represents a notification body with the comma separated twitter usernames
+	body := fmt.Sprintf(gettext.Gettext("From %s"), strings.Join(senders, ", "))
+	action := fmt.Sprintf("%s/messages", twitterDispatchUrlBase)
+	epoch := time.Now().Unix()
+
+	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
+}
+
+func (p *twitterPlugin) Poll(authData *accounts.AuthData) (batches []*plugins.PushMessageBatch, err error) {
 	url := "statuses/mentions_timeline.json"
 	if p.lastMentionId > 0 {
 		url = fmt.Sprintf("%s?since_id=%d", url, p.lastMentionId)
@@ -201,7 +208,7 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 	if err != nil {
 		return
 	}
-	messages, err = p.parseStatuses(resp)
+	statuses, err := p.parseStatuses(resp)
 	if err != nil {
 		return
 	}
@@ -222,7 +229,12 @@ func (p *twitterPlugin) Poll(authData *accounts.AuthData) (messages []plugins.Pu
 		p.bootstrap = true
 		return nil, nil
 	}
-	messages = append(messages, dms...)
+	if statuses != nil && len(statuses.Messages) > 0 {
+		batches = append(batches, statuses)
+	}
+	if dms != nil && len(dms.Messages) > 0 {
+		batches = append(batches, dms)
+	}
 	return
 }
 

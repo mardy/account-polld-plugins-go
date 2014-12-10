@@ -354,8 +354,10 @@ func (s *S) TestParseNotifications(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{}
-	messages, err := p.parseResponse(resp)
+	batch, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
 	c.Assert(len(messages), Equals, 2)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
@@ -370,15 +372,18 @@ func (s *S) TestParseLotsOfNotifications(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(largeNotificationsBody))},
 	}
 	p := &fbPlugin{}
-	messages, err := p.parseResponse(resp)
+	batch, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
-	c.Assert(len(messages), Equals, 3)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
+	c.Assert(len(messages), Equals, 4)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Sender2")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Sender2's birthday was on July 7.")
-	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more notifications")
-	c.Check(messages[2].Notification.Card.Body, Equals, "From Sender3, Sender2")
+	ofMsg := batch.OverflowHandler(messages[2:])
+	c.Check(ofMsg.Notification.Card.Summary, Equals, "Multiple more notifications")
+	c.Check(ofMsg.Notification.Card.Body, Equals, "From Sender3, Sender2")
 	c.Check(p.state.LastUpdate, Equals, timeStamp("2014-07-12T09:51:57+0000"))
 }
 
@@ -388,8 +393,10 @@ func (s *S) TestIgnoreOldNotifications(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(notificationsBody))},
 	}
 	p := &fbPlugin{state: fbState{LastUpdate: "2014-07-08T06:17:52+0000"}}
-	messages, err := p.parseResponse(resp)
+	batch, err := p.parseResponse(resp)
 	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
 	c.Assert(len(messages), Equals, 1)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Sender")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Sender posted on your timeline: \"The message...\"")
@@ -456,15 +463,20 @@ func (s *S) TestParseInbox(c *C) {
 		Body:       closeWrapper{bytes.NewReader([]byte(inboxBody))},
 	}
 	p := &fbPlugin{}
-	messages, err := p.parseInboxResponse(resp)
+	batch, err := p.parseInboxResponse(resp)
 	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	messages := batch.Messages
 	c.Assert(len(messages), Equals, 3)
 	c.Check(messages[0].Notification.Card.Summary, Equals, "Pollod Magnifico")
 	c.Check(messages[0].Notification.Card.Body, Equals, "Hola mundo!")
 	c.Check(messages[1].Notification.Card.Summary, Equals, "Pollitod Magnifico")
 	c.Check(messages[1].Notification.Card.Body, Equals, "Hola!")
-	c.Check(messages[2].Notification.Card.Summary, Equals, "Multiple more messages")
-	c.Check(messages[2].Notification.Card.Body, Equals, "From Pollitod Magnifico, A Friend")
+
+	ofMsg := batch.OverflowHandler(messages[batch.Limit:])
+
+	c.Check(ofMsg.Notification.Card.Summary, Equals, "Multiple more messages")
+	c.Check(ofMsg.Notification.Card.Body, Equals, "From A Friend")
 	c.Check(p.state.LastInboxUpdate, Equals, timeStamp("2014-08-25T18:39:32+0000"))
 }
 
@@ -518,8 +530,9 @@ func (s *S) TestBuildPushMessages(c *C) {
 	var doc inboxDoc
 	p.decodeResponse(resp, &doc)
 	notifications := p.filterNotifications(&doc, &p.state.LastInboxUpdate)
-	pushMsgs := p.buildPushMessages(notifications, &doc, doc.size(), doc.size())
-	c.Check(pushMsgs, HasLen, doc.size())
+	batch := p.buildPushMessages(notifications, &doc, doc.size(), doc.size())
+	c.Assert(batch, NotNil)
+	c.Check(batch.Messages, HasLen, doc.size())
 }
 
 func (s *S) TestBuildPushMessagesConsolidate(c *C) {
@@ -533,9 +546,11 @@ func (s *S) TestBuildPushMessagesConsolidate(c *C) {
 	p.decodeResponse(resp, &doc)
 	notifications := p.filterNotifications(&doc, &p.state.LastInboxUpdate)
 	max := doc.size() - 2
-	pushMsgs := p.buildPushMessages(notifications, &doc, max, max)
-	// we should get max + 1 messages
-	c.Check(pushMsgs, HasLen, max+1)
+	batch := p.buildPushMessages(notifications, &doc, max, max)
+	c.Assert(batch, NotNil)
+	// we should get all the messages in a batch with Limit=max
+	c.Check(batch.Messages, HasLen, len(notifications))
+	c.Check(batch.Limit, Equals, max)
 }
 
 func (s *S) TestStateFromStorageInitialState(c *C) {
@@ -639,8 +654,10 @@ func (s *S) TestGetInbox(c *C) {
 	authData := accounts.AuthData{}
 	authData.AccessToken = "foo"
 	p := &fbPlugin{state: state, accountId: 32}
-	msgs, err := p.getInbox(&authData)
-	c.Check(err, IsNil)
+	batch, err := p.getInbox(&authData)
+	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	msgs := batch.Messages
 	c.Check(msgs, HasLen, 3)
 }
 
@@ -685,8 +702,10 @@ func (s *S) TestGetNotifications(c *C) {
 	authData := accounts.AuthData{}
 	authData.AccessToken = "foo"
 	p := &fbPlugin{state: state, accountId: 32}
-	msgs, err := p.getNotifications(&authData)
-	c.Check(err, IsNil)
+	batch, err := p.getNotifications(&authData)
+	c.Assert(err, IsNil)
+	c.Assert(batch, NotNil)
+	msgs := batch.Messages
 	c.Check(msgs, HasLen, 2)
 }
 
@@ -735,9 +754,16 @@ func (s *S) TestPoll(c *C) {
 	authData := accounts.AuthData{}
 	authData.AccessToken = "foo"
 	p := &fbPlugin{state: state, accountId: 32}
-	msgs, err := p.Poll(&authData)
-	c.Check(err, IsNil)
-	c.Check(msgs, HasLen, 5)
+	batches, err := p.Poll(&authData)
+	c.Assert(err, IsNil)
+	c.Assert(batches, NotNil)
+	c.Assert(batches, HasLen, 2)
+	c.Assert(batches[0], NotNil)
+	c.Assert(batches[1], NotNil)
+	c.Check(batches[0].Tag, Equals, "notification")
+	c.Check(batches[0].Messages, HasLen, 2)
+	c.Check(batches[1].Tag, Equals, "inbox")
+	c.Check(batches[1].Messages, HasLen, 3)
 }
 
 func (s *S) TestPollSingleError(c *C) {
@@ -755,9 +781,11 @@ func (s *S) TestPollSingleError(c *C) {
 	authData := accounts.AuthData{}
 	authData.AccessToken = "foo"
 	p := &fbPlugin{state: state, accountId: 32}
-	msgs, err := p.Poll(&authData)
-	c.Check(err, IsNil)
-	c.Check(msgs, HasLen, 3)
+	batches, err := p.Poll(&authData)
+	c.Assert(err, IsNil)
+	c.Assert(batches, HasLen, 1)
+	c.Assert(batches[0], NotNil)
+	c.Check(batches[0].Messages, HasLen, 3)
 }
 
 func (s *S) TestPollError(c *C) {

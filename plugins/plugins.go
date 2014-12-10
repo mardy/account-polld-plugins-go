@@ -44,7 +44,7 @@ func init() {
 // ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
 	ApplicationId() ApplicationId
-	Poll(*accounts.AuthData) ([]PushMessage, error)
+	Poll(*accounts.AuthData) ([]*PushMessageBatch, error)
 }
 
 // AuthTokens is a map with tokens the plugins are to use to make requests.
@@ -74,6 +74,21 @@ func NewStandardPushMessage(summary, body, action, icon string, epoch int64) *Pu
 		},
 	}
 	return pm
+}
+
+// PushMessageBatch represents a logical grouping of PushMessages that
+// have a limit on the number of their notifications that want to be
+// presented to the user at the same time, and a way to handle the
+// overflow. All Notifications that are part of a Batch share the same
+// tag (Tag).  ${Tag}-overflow is the overflow notification tag.
+//
+// TODO: support notifications sharing just the prefix (so the app can
+// tell them apart by tag).
+type PushMessageBatch struct {
+	Messages        []*PushMessage
+	Limit           int
+	OverflowHandler func([]*PushMessage) *PushMessage
+	Tag             string
 }
 
 // PushMessage represents a data structure to be sent over to the

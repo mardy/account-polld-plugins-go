@@ -100,7 +100,7 @@ func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
 	return plugins.ApplicationId(APP_ID)
 }
 
-func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, error) {
+func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GMAIL"); token != "" {
 		authData.AccessToken = token
@@ -126,7 +126,18 @@ func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]plugins.PushMessage, 
 			return nil, err
 		}
 	}
-	return p.createNotifications(messages)
+	notif, err := p.createNotifications(messages)
+	if err != nil {
+		return nil, err
+	}
+	return []*plugins.PushMessageBatch{
+		&plugins.PushMessageBatch{
+			Messages:        notif,
+			Limit:           individualNotificationsLimit,
+			OverflowHandler: p.handleOverflow,
+			Tag:             "gmail",
+		}}, nil
+
 }
 
 func (p *GmailPlugin) reported(id string) bool {
@@ -134,7 +145,7 @@ func (p *GmailPlugin) reported(id string) bool {
 	return ok
 }
 
-func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMessage, error) {
+func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMessage, error) {
 	timestamp := time.Now()
 	pushMsgMap := make(pushes)
 
@@ -163,32 +174,30 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]plugins.PushMes
 			// fmt with label personal and threadId
 			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
 			epoch := hdr.getEpoch()
-			pushMsgMap[msg.ThreadId] = *plugins.NewStandardPushMessage(summary, body, action, avatarPath, epoch)
+			pushMsgMap[msg.ThreadId] = plugins.NewStandardPushMessage(summary, body, action, avatarPath, epoch)
 		} else {
 			log.Print("gmail plugin ", p.accountId, ": skipping message id ", msg.Id, " with date ", msgStamp, " older than ", timeDelta)
 		}
 	}
-	var pushMsg []plugins.PushMessage
+	pushMsg := make([]*plugins.PushMessage, 0, len(pushMsgMap))
 	for _, v := range pushMsgMap {
 		pushMsg = append(pushMsg, v)
-		if len(pushMsg) == individualNotificationsLimit {
-			break
-		}
 	}
-	if len(pushMsgMap) > individualNotificationsLimit {
-		// TRANSLATORS: This represents a notification summary about more unread emails
-		summary := gettext.Gettext("More unread emails available")
-		// TODO it would probably be better to grab the estimate that google returns in the message list.
-		approxUnreadMessages := len(pushMsgMap) - individualNotificationsLimit
-		// TRANSLATORS: the first %d refers to approximate additionl email message count
-		body := fmt.Sprintf(gettext.Gettext("You have an approximate of %d additional unread messages"), approxUnreadMessages)
-		// fmt with label personal and no threadId
-		action := fmt.Sprintf(gmailDispatchUrl, "personal")
-		epoch := time.Now().Unix()
-		pushMsg = append(pushMsg, *plugins.NewStandardPushMessage(summary, body, action, "", epoch))
-	}
-
 	return pushMsg, nil
+
+}
+func (p *GmailPlugin) handleOverflow(pushMsg []*plugins.PushMessage) *plugins.PushMessage {
+	// TRANSLATORS: This represents a notification summary about more unread emails
+	summary := gettext.Gettext("More unread emails available")
+	// TODO it would probably be better to grab the estimate that google returns in the message list.
+	approxUnreadMessages := len(pushMsg)
+	// TRANSLATORS: the first %d refers to approximate additionl email message count
+	body := fmt.Sprintf(gettext.Gettext("You have an approximate of %d additional unread messages"), approxUnreadMessages)
+	// fmt with label personal and no threadId
+	action := fmt.Sprintf(gmailDispatchUrl, "personal")
+	epoch := time.Now().Unix()
+
+	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 }
 
 func (p *GmailPlugin) parseMessageListResponse(resp *http.Response) ([]message, error) {

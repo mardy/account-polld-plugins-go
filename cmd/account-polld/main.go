@@ -37,8 +37,8 @@ import (
 )
 
 type PostWatch struct {
-	appId    plugins.ApplicationId
-	messages []plugins.PushMessage
+	appId   plugins.ApplicationId
+	batches []*plugins.PushMessageBatch
 }
 
 /* Use identifiers and API keys provided by the respective webapps which are the official
@@ -152,18 +152,66 @@ L:
 
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
-		for _, n := range post.messages {
-			var pushMessage string
-			if out, err := json.Marshal(n); err == nil {
-				pushMessage = string(out)
-			} else {
-				log.Printf("Cannot marshall %#v to json: %s", n, err)
-				continue
+		obj := bus.Object(POSTAL_SERVICE, pushObjectPath(post.appId))
+		pers, err := obj.Call(POSTAL_INTERFACE, "ListPersistent", post.appId)
+		if err != nil {
+			log.Println("Could not list previous messages:", err)
+			continue
+		}
+		var tags []string
+		tagmap := make(map[string]int)
+		if err := pers.Args(&tags); err != nil {
+			log.Println("Could not get tags:", err)
+			continue
+		}
+		log.Printf("Previous messages: %#v\n", tags)
+		for _, tag := range tags {
+			tagmap[tag]++
+		}
+
+		for _, batch := range post.batches {
+			// add individual notifications upto the batch limit
+			// (minus currently presented notifications). If
+			// overflowed and no overflow present, present that.
+			var notifs []*plugins.PushMessage
+			add := batch.Limit - tagmap[batch.Tag]
+			if add > 0 {
+				// there are less notifications presented than
+				// the limit; we can show some
+				if len(batch.Messages) < add {
+					notifs = batch.Messages
+				} else {
+					notifs = batch.Messages[:add]
+				}
 			}
-			obj := bus.Object(POSTAL_SERVICE, pushObjectPath(post.appId))
-			if _, err := obj.Call(POSTAL_INTERFACE, "Post", post.appId, pushMessage); err != nil {
-				log.Println("Cannot call the Post Office:", err)
-				log.Println("Message missed posting:", pushMessage)
+			for _, n := range notifs {
+				n.Notification.Tag = batch.Tag
+			}
+			ofTag := batch.Tag + "-overflow"
+			if len(notifs) < len(batch.Messages) {
+				// overflow
+				n := batch.OverflowHandler(batch.Messages[len(notifs):])
+				n.Notification.Tag = ofTag
+				if tagmap[ofTag] != 0 {
+					// sneakily, don't replace the overflow card,
+					// but do play the sound & etc
+					n.Notification.Card = nil
+				}
+				notifs = append(notifs, n)
+			}
+
+			for _, n := range notifs {
+				var pushMessage string
+				if out, err := json.Marshal(n); err == nil {
+					pushMessage = string(out)
+				} else {
+					log.Printf("Cannot marshall %#v to json: %s", n, err)
+					continue
+				}
+				if _, err := obj.Call(POSTAL_INTERFACE, "Post", post.appId, pushMessage); err != nil {
+					log.Println("Cannot call the Post Office:", err)
+					log.Println("Message missed posting:", pushMessage)
+				}
 			}
 		}
 	}
