@@ -1,3 +1,11 @@
+account-polld (0.1+15.04.20141210.1-0ubuntu1) vivid; urgency=low
+
+  [ John R. Lenton ]
+  * first pass at grouping notifications by plugin (next pass: make
+    gmail track threads, not messages). (LP: #1400749)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 10 Dec 2014 17:27:00 +0000
+
 account-polld (0.1+14.10.20141006.1-0ubuntu1) utopic; urgency=low
 
   [ Guillermo Gonzalez ]
