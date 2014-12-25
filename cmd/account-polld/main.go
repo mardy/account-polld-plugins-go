@@ -1,6 +1,7 @@
 /*
  Copyright 2014 Canonical Ltd.
  Authors: Sergio Schvezov <sergio.schvezov@canonical.com>
+ Authors: Niklas Wenzel <nikwen.developer@gmail.com>
 
  This program is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License version 3, as published
@@ -137,12 +138,25 @@ L:
 		case <-pollBus.PollChan:
 			var wg sync.WaitGroup
 			for _, v := range mgr {
-				wg.Add(1)
-				poll := v.Poll
-				go func() {
-					defer wg.Done()
-					poll(false)
-				}()
+				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token
+				                                                 // hasn't been loaded yet
+					wg.Add(1)
+					go func(accountManager *AccountManager) {
+						defer wg.Done()
+
+						if v.authData.Error != nil {
+							// Make the account try to authenticate again in Poll()
+							log.Println("Retrying to authenticate existing account with id",
+							                                            v.authData.AccountId)
+							accountManager.penaltyCount = 0
+							accountManager.authData.Error = nil
+						}
+
+						accountManager.Poll(false)
+					}(v)
+				} else {
+					log.Println("Skipping account with id", v.authData.AccountId, "as it is refreshing its token")
+				}
 			}
 			wg.Wait()
 			pollBus.SignalDone()
