@@ -144,10 +144,10 @@ L:
 					go func(accountManager *AccountManager) {
 						defer wg.Done()
 
-						if v.authData.Error != nil {
+						if accountManager.authData.Error != nil {
 							// Make the account try to authenticate again in Poll()
 							log.Println("Retrying to authenticate existing account with id",
-							                                            v.authData.AccountId)
+							                               accountManager.authData.AccountId)
 							accountManager.penaltyCount = 0
 							accountManager.authData.Error = nil
 						}
