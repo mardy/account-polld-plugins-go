@@ -129,6 +129,7 @@ func (a *AccountManager) poll() {
 		if err == plugins.ErrTokenExpired {
 			a.watcher.Refresh(a.authData.AccountId)
 			a.authData.Enabled = false
+			a.authData.Error = err
 		}
 		a.doneChan <- err
 	} else {
