@@ -1,7 +1,5 @@
 /*
  Copyright 2014 Canonical Ltd.
- Authors: James Henstridge <james.henstridge@canonical.com>
-          Sergio Schvezov <sergio.schvezov@canonical.com>
 
  This program is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License version 3, as published
