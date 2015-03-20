@@ -106,7 +106,9 @@ L:
 			if account, ok := mgr[data.AccountId]; ok {
 				if data.Enabled {
 					log.Println("New account data for existing account with id", data.AccountId)
+					account.penaltyCount = 0
 					account.updateAuthData(data)
+					account.Poll(false)
 				} else {
 					account.Delete()
 					delete(mgr, data.AccountId)
