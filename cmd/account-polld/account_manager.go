@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -39,8 +40,13 @@ type AccountManager struct {
 
 var (
 	pollTimeout          = time.Duration(30 * time.Second)
-	bootstrapPollTimeout = time.Duration(5 * time.Minute)
+	bootstrapPollTimeout = time.Duration(4 * time.Minute)
 	maxCounter           = 4
+)
+
+var (
+	authError              = errors.New("Skipped account")
+	clickNotInstalledError = errors.New("Click not installed")
 )
 
 var isBlacklisted = cblacklist.IsBlacklisted
@@ -96,7 +102,9 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			log.Println("Poll for account", a.authData.AccountId, "was successful")
 			a.penaltyCount = 0
 		} else {
-			log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
+			if err != clickNotInstalledError && err != authError { // Do not log the error twice
+				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
+			}
 			if a.penaltyCount < maxCounter {
 				a.penaltyCount++
 			}
@@ -111,11 +119,13 @@ func (a *AccountManager) poll() {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
 			a.plugin.ApplicationId(), "is not installed")
+		a.doneChan <- clickNotInstalledError
 		return
 	}
 
 	if a.authData.Error != nil {
 		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)
+		a.doneChan <- authError
 		return
 	}
 
