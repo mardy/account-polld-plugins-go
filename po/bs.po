@@ -1,16 +1,16 @@
-# Italian translation for account-polld
-# Copyright (c) 2014 Rosetta Contributors and Canonical Ltd 2014
+# Bosnian translation for account-polld
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
 # This file is distributed under the same license as the account-polld package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2014.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2014-09-01 17:45-0300\n"
-"PO-Revision-Date: 2014-08-30 07:59+0000\n"
-"Last-Translator: Claudio Arseni <claudio.arseni@gmail.com>\n"
-"Language-Team: Italian <it@li.org>\n"
+"PO-Revision-Date: 2015-03-24 20:06+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Bosnian <bs@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -20,7 +20,7 @@ msgstr ""
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:365
 msgid "Multiple more messages"
-msgstr "Molteplici messaggi"
+msgstr "Više višestrukih poruka"
 
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
 #. TRANSLATORS: This represents a notification body with the comma separated facebook usernames
@@ -29,12 +29,12 @@ msgstr "Molteplici messaggi"
 #: plugins/twitter/twitter.go:130 plugins/twitter/twitter.go:187
 #, c-format
 msgid "From %s"
-msgstr "Da %s"
+msgstr "Od %s"
 
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:414
 msgid "Multiple more notifications"
-msgstr "Molteplici notifiche"
+msgstr "Više višestrukih obavijesti"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:113 plugins/twitter/twitter.go:170
@@ -45,12 +45,12 @@ msgstr "%s. @%s"
 #. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:128
 msgid "Multiple more mentions"
-msgstr "Molteplici menzioni"
+msgstr "Više višestrukih napomena"
 
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:185
 msgid "Multiple direct messages available"
-msgstr "Molteplici messaggi diretti dipsonibili"
+msgstr "Direktne višestruke poruke su dostupne"
 
 #. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 #: plugins/gmail/gmail.go:157
@@ -77,22 +77,22 @@ msgstr ""
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:180
 msgid "More unread emails available"
-msgstr "Altre email non lette disponibili"
+msgstr "Više nepročitanih email-ova je dostupno"
 
 #. TRANSLATORS: the first %d refers to approximate additionl email message count
 #: plugins/gmail/gmail.go:184
 #, c-format
 msgid "You have an approximate of %d additional unread messages"
-msgstr "Sono presenti circa %d ulteriori email da leggere"
+msgstr "Imate tačno  %d  nepročitanih poruka"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr "Notifiche"
+msgstr "Obavještenja"
 
 #: data/account-polld.application.tr.h:1
 msgid "Account Polling"
-msgstr "Gestione account"
+msgstr "Biranje računa"
 
 #: data/account-polld.application.tr.h:2
 msgid "Receive notifications for this account"
-msgstr "Ricevere notifiche per questo account"
+msgstr "Dobijaj obavještenja za ovaj račun"
