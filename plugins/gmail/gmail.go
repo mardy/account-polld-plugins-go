@@ -190,8 +190,8 @@ func (p *GmailPlugin) handleOverflow(pushMsg []*plugins.PushMessage) *plugins.Pu
 	summary := gettext.Gettext("More unread emails available")
 	// TODO it would probably be better to grab the estimate that google returns in the message list.
 	approxUnreadMessages := len(pushMsg)
-	// TRANSLATORS: the first %d refers to approximate additionl email message count
-	body := fmt.Sprintf(gettext.Gettext("You have an approximate of %d additional unread messages"), approxUnreadMessages)
+	// TRANSLATORS: the first %d refers to approximate additional email message count
+	body := fmt.Sprintf(gettext.Gettext("You have about %d more unread messages"), approxUnreadMessages)
 	// fmt with label personal and no threadId
 	action := fmt.Sprintf(gmailDispatchUrl, "personal")
 	epoch := time.Now().Unix()
