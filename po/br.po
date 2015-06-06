@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: account-polld\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-03-27 11:39+0000\n"
-"PO-Revision-Date: 2015-05-19 07:11+0000\n"
+"PO-Revision-Date: 2015-06-05 06:23+0000\n"
 "Last-Translator: Fohanno Thierry <thierry.fohanno@ofis-bzh.org>\n"
 "Language-Team: Breton <br@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2015-05-20 05:30+0000\n"
-"X-Generator: Launchpad (build 17508)\n"
+"X-Launchpad-Export-Date: 2015-06-06 05:33+0000\n"
+"X-Generator: Launchpad (build 17540)\n"
 
 #. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 #: plugins/gmail/gmail.go:167
@@ -59,7 +59,7 @@ msgstr "%s. @%s"
 #. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:131
 msgid "Multiple more mentions"
-msgstr ""
+msgstr "Meur a veneg zo da gaout"
 
 #. TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
@@ -73,17 +73,17 @@ msgstr "Digant %s"
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:192
 msgid "Multiple direct messages available"
-msgstr ""
+msgstr "Meur a gemennadenn brevez zo da gaout"
 
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:354
 msgid "Multiple more messages"
-msgstr ""
+msgstr "Meur a gemennadenn all"
 
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:405
 msgid "Multiple more notifications"
-msgstr ""
+msgstr "Meur a gemenn all zo da gaout"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
