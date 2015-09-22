@@ -107,7 +107,7 @@ L:
 				if data.Enabled {
 					log.Println("New account data for existing account with id", data.AccountId)
 					account.penaltyCount = 0
-					account.failedAuthentificationTries = 0
+					account.failedAuthenticationTries = 0
 					account.updateAuthData(data)
 					account.Poll(false)
 				} else {
