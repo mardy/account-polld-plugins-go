@@ -75,6 +75,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			log.Println("Account", a.authData.AccountId, "no longer enabled")
 			return
 		}
+		log.Println("!enabled before")
 	}
 
 	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
