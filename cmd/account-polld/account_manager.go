@@ -28,14 +28,14 @@ import (
 )
 
 type AccountManager struct {
-	watcher      *accounts.Watcher
-	authData     accounts.AuthData
-	plugin       plugins.Plugin
-	interval     time.Duration
-	postWatch    chan *PostWatch
-	authChan     chan accounts.AuthData
-	doneChan     chan error
-	penaltyCount int
+	watcher                     *accounts.Watcher
+	authData                    accounts.AuthData
+	plugin                      plugins.Plugin
+	interval                    time.Duration
+	postWatch                   chan *PostWatch
+	authChan                    chan accounts.AuthData
+	doneChan                    chan error
+	penaltyCount                int
 	failedAuthentificationTries int
 }
 
