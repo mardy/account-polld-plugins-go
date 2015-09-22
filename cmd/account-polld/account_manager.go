@@ -28,15 +28,15 @@ import (
 )
 
 type AccountManager struct {
-	watcher                     *accounts.Watcher
-	authData                    accounts.AuthData
-	plugin                      plugins.Plugin
-	interval                    time.Duration
-	postWatch                   chan *PostWatch
-	authChan                    chan accounts.AuthData
-	doneChan                    chan error
-	penaltyCount                int
-	failedAuthentificationTries int
+	watcher                   *accounts.Watcher
+	authData                  accounts.AuthData
+	plugin                    plugins.Plugin
+	interval                  time.Duration
+	postWatch                 chan *PostWatch
+	authChan                  chan accounts.AuthData
+	doneChan                  chan error
+	penaltyCount              int
+	failedAuthenticationTries int
 }
 
 var (
@@ -89,7 +89,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	} else if !gotNewAuthData && a.authData.Error != nil {
 		// Make the account try to authenticate again
 		log.Println("Retrying to authenticate existing account with id", a.authData.AccountId)
-		a.failedAuthentificationTries = 0
+		a.failedAuthenticationTries = 0
 		a.authData.Error = nil
 	}
 
@@ -114,8 +114,8 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
 			}
 			if err == authError {
-				a.failedAuthentificationTries++
-				if a.failedAuthentificationTries >= 3 {
+				a.failedAuthenticationTries++
+				if a.failedAuthenticationTries >= 3 {
 					a.penaltyCount = authFailurePenalty
 				}
 			} else if a.penaltyCount < maxCounter {
