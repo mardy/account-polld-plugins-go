@@ -36,12 +36,14 @@ type AccountManager struct {
 	authChan     chan accounts.AuthData
 	doneChan     chan error
 	penaltyCount int
+	failedAuthentificationTries int
 }
 
 var (
 	pollTimeout          = time.Duration(30 * time.Second)
 	bootstrapPollTimeout = time.Duration(4 * time.Minute)
 	maxCounter           = 4
+	authFailurePenalty   = 6
 )
 
 var (
@@ -67,9 +69,9 @@ func (a *AccountManager) Delete() {
 }
 
 func (a *AccountManager) Poll(bootstrap bool) {
+	gotNewAuthData := false
 	if !a.authData.Enabled {
-		var ok bool
-		if a.authData, ok = <-a.authChan; !ok {
+		if a.authData, gotNewAuthData = <-a.authChan; !gotNewAuthData {
 			log.Println("Account", a.authData.AccountId, "no longer enabled")
 			return
 		}
@@ -81,10 +83,16 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	}
 
 	if a.penaltyCount > 0 {
-		log.Printf("Leaving poll for account %d as penaly count is %d", a.authData.AccountId, a.penaltyCount)
+		log.Printf("Leaving poll for account %d as penalty count is %d", a.authData.AccountId, a.penaltyCount)
 		a.penaltyCount--
 		return
+	} else if !gotNewAuthData && a.authData.Error != nil {
+		// Make the account try to authenticate again
+		log.Println("Retrying to authenticate existing account with id", a.authData.AccountId)
+		a.failedAuthentificationTries = 0
+		a.authData.Error = nil
 	}
+
 	timeout := pollTimeout
 	if bootstrap {
 		timeout = bootstrapPollTimeout
@@ -105,7 +113,12 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			if err != clickNotInstalledError && err != authError { // Do not log the error twice
 				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
 			}
-			if a.penaltyCount < maxCounter {
+			if err == authError {
+				a.failedAuthentificationTries++
+				if a.failedAuthentificationTries >= 3 {
+					a.penaltyCount = authFailurePenalty
+				}
+			} else if a.penaltyCount < maxCounter {
 				a.penaltyCount++
 			}
 		}

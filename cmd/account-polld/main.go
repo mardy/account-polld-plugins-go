@@ -107,6 +107,7 @@ L:
 				if data.Enabled {
 					log.Println("New account data for existing account with id", data.AccountId)
 					account.penaltyCount = 0
+					account.failedAuthentificationTries = 0
 					account.updateAuthData(data)
 					account.Poll(false)
 				} else {
@@ -138,20 +139,10 @@ L:
 		case <-pollBus.PollChan:
 			var wg sync.WaitGroup
 			for _, v := range mgr {
-				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token
-					// hasn't been loaded yet
+				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token hasn't been loaded yet
 					wg.Add(1)
 					go func(accountManager *AccountManager) {
 						defer wg.Done()
-
-						if accountManager.authData.Error != nil {
-							// Make the account try to authenticate again in Poll()
-							log.Println("Retrying to authenticate existing account with id",
-								accountManager.authData.AccountId)
-							accountManager.penaltyCount = 0
-							accountManager.authData.Error = nil
-						}
-
 						accountManager.Poll(false)
 					}(v)
 				} else {
