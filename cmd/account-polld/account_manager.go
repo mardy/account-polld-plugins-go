@@ -37,14 +37,14 @@ type AccountManager struct {
 	doneChan                  chan error
 	penaltyCount              int
 	failedAuthenticationTries int
-	authTriesUntilPenalty    int
 }
 
 var (
-	pollTimeout          = time.Duration(30 * time.Second)
-	bootstrapPollTimeout = time.Duration(4 * time.Minute)
-	maxCounter           = 4
-	authFailurePenalty   = 6
+	pollTimeout           = time.Duration(30 * time.Second)
+	bootstrapPollTimeout  = time.Duration(4 * time.Minute)
+	maxCounter            = 4
+	authTriesUntilPenalty = 3
+	authFailurePenalty    = 6
 )
 
 var (
