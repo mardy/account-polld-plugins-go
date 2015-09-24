@@ -44,7 +44,7 @@ var (
 	bootstrapPollTimeout  = time.Duration(4 * time.Minute)
 	maxCounter            = 4
 	authTriesUntilPenalty = 3
-	authFailurePenalty    = 6
+	authFailurePenalty    = 10
 )
 
 var (
@@ -89,8 +89,8 @@ func (a *AccountManager) Poll(bootstrap bool) {
 		a.penaltyCount--
 		return
 	} else if !gotNewAuthData && a.authData.Error != nil {
-		// Make the account try to authenticate again
-		log.Println("Retrying to authenticate existing account with id", a.authData.AccountId)
+		// Retry to poll the account with a previous auth failure as that results in reauthentication in case of token expiry and in ignoring temporary network issues
+		log.Println("Retrying to poll account with previous auth failure and id", a.authData.AccountId, "(results in reauthentication in case of token expiry and in ignoring temporary network issues)")
 		a.authData.Error = nil
 
 		// Reset failed authentication tries counter after the penalty has taken effect
@@ -123,6 +123,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				a.failedAuthenticationTries++
 				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
+					log.Println(authTriesUntilPenalty, "auth failures in a row for account", a.authData.AccountId, "-> skipping it for the next", a.penaltyCount, "poll cycles")
 				}
 			} else if a.penaltyCount < maxCounter {
 				a.failedAuthenticationTries = 0
