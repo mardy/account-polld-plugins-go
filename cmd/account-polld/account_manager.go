@@ -113,6 +113,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	case err := <-a.doneChan:
 		if err == nil {
 			log.Println("Poll for account", a.authData.AccountId, "was successful")
+			a.failedAuthenticationTries = 0
 			a.penaltyCount = 0
 		} else {
 			if err != clickNotInstalledError && err != authError { // Do not log the error twice
