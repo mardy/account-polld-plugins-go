@@ -37,6 +37,7 @@ type AccountManager struct {
 	doneChan                  chan error
 	penaltyCount              int
 	failedAuthenticationTries int
+	authTriesUntilPenalty    int
 }
 
 var (
@@ -90,8 +91,12 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	} else if !gotNewAuthData && a.authData.Error != nil {
 		// Make the account try to authenticate again
 		log.Println("Retrying to authenticate existing account with id", a.authData.AccountId)
-		a.failedAuthenticationTries = 0
 		a.authData.Error = nil
+
+		// Reset failed authentication tries counter after the penalty has taken effect
+		if a.failedAuthenticationTries >= authTriesUntilPenalty {
+			a.failedAuthenticationTries = 0
+		}
 	}
 
 	timeout := pollTimeout
@@ -116,10 +121,11 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			}
 			if err == authError {
 				a.failedAuthenticationTries++
-				if a.failedAuthenticationTries >= 3 {
+				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
 				}
 			} else if a.penaltyCount < maxCounter {
+				a.failedAuthenticationTries = 0
 				a.penaltyCount++
 			}
 		}
