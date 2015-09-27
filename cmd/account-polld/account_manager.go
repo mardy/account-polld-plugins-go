@@ -129,6 +129,16 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				a.failedAuthenticationTries = 0
 				a.penaltyCount++
 			}
+
+			// If the error indicates that the authentication token has expired, request
+			// reauthentication and mark the data as disabled
+			// This needs to be done after the penalty count has been updated in order to
+			// not interfere with the penalty count change in the new account data handler
+			if err == plugins.ErrTokenExpired {
+				a.watcher.Refresh(a.authData.AccountId)
+				a.authData.Enabled = false
+				a.authData.Error = err
+			}
 		}
 	}
 	log.Printf("Ending poll for account %d", a.authData.AccountId)
@@ -152,15 +162,6 @@ func (a *AccountManager) poll() {
 
 	if bs, err := a.plugin.Poll(&a.authData); err != nil {
 		log.Print("Error while polling ", a.authData.AccountId, ": ", err)
-
-		// If the error indicates that the authentication
-		// token has expired, request reauthentication and
-		// mark data as disabled.
-		if err == plugins.ErrTokenExpired {
-			a.watcher.Refresh(a.authData.AccountId)
-			a.authData.Enabled = false
-			a.authData.Error = err
-		}
 		a.doneChan <- err
 	} else {
 		for _, b := range bs {
