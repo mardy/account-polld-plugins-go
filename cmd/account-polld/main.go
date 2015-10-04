@@ -97,6 +97,8 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watcher := accounts.NewWatcher(SERVICETYPE_WEBAPPS)
 	mgr := make(map[uint]*AccountManager)
 
+	var wg sync.WaitGroup
+
 L:
 	for {
 		select {
@@ -106,7 +108,15 @@ L:
 					log.Println("New account data for existing account with id", data.AccountId)
 					account.penaltyCount = 0
 					account.updateAuthData(data)
-					account.Poll(false)
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						// Poll() needs to be called asynchronously as otherwise qtcontacs' GetAvatar() will
+						// raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
+						account.Poll(false)
+					}()
+					// No wg.Wait() here as it would break GetAvatar() again.
+					// Instead we have a wg.Wait() before the PollChan polling below.
 				} else {
 					account.Delete()
 					delete(mgr, data.AccountId)
@@ -131,10 +141,18 @@ L:
 				}
 				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
 				mgr[data.AccountId].updateAuthData(data)
-				mgr[data.AccountId].Poll(true)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					// Poll() needs to be called asynchronously as otherwise qtcontacs' GetAvatar() will
+					// raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
+					mgr[data.AccountId].Poll(true)
+				}()
+				// No wg.Wait() here as it would break GetAvatar() again.
+				// Instead we have a wg.Wait() before the PollChan polling below.
 			}
 		case <-pollBus.PollChan:
-			var wg sync.WaitGroup
+			wg.Wait() // Finish all running Poll() calls before potentially polling the same accounts again
 			for _, v := range mgr {
 				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token
 					// hasn't been loaded yet
