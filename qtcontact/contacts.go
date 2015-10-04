@@ -24,19 +24,8 @@ import "C"
 
 import (
 	"log"
-	"sync"
 	"time"
 )
-
-var (
-	avatarPathChan chan string
-	m              sync.Mutex
-)
-
-//export callback
-func callback(path *C.char) {
-	avatarPathChan <- C.GoString(path)
-}
 
 func MainLoopStart() {
 	go C.mainloopStart()
@@ -49,19 +38,19 @@ func GetAvatar(emailAddress string) string {
 		return ""
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	avatarPathChan := make(chan string, 1)
 
-	avatarPathChan = make(chan string, 1)
-	defer close(avatarPathChan)
+	go func() {
+		avatarPathChan <- C.GoString(C.getAvatar(C.CString(emailAddress)))
+	}()
 
-	C.getAvatar(C.CString(emailAddress))
-
-	select {
-	case <-time.After(3 * time.Second):
-		log.Println("Timeout while seeking avatar for", emailAddress)
-		return ""
-	case path := <-avatarPathChan:
-		return path
+	for {
+		select {
+		case path := <-avatarPathChan:
+			return path
+		case <-time.After(8 * time.Second):
+			log.Println("Timeout while seeking avatar for", emailAddress)
+			return ""
+		}
 	}
 }
