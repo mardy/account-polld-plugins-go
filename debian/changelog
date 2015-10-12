@@ -1,3 +1,11 @@
+account-polld (0.1+15.04.20151012-0ubuntu1) UNRELEASED; urgency=medium
+
+  * Remove non-working facebook integration. (LP: #1493733)
+  * debian/control, debian/account-polld.conf:
+    Remove mentions of Facebook from the descriptions.
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Mon, 12 Oct 2015 16:49:52 +0300
+
 account-polld (0.1+15.04.20150410-0ubuntu2~gcc5.1) wily; urgency=medium
 
   * No-change test rebuild for g++5 ABI transition
