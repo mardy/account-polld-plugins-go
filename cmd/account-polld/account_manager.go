@@ -128,11 +128,10 @@ func (a *AccountManager) Poll(bootstrap bool) {
 					a.authFailureCount = 0
 					log.Println(authTriesUntilPenalty, "auth failures in a row for account", a.authData.AccountId, "-> skipping it for the next", a.penaltyCount, "poll cycles")
 				} else if err == plugins.ErrTokenExpired && !gotNewAuthData {
-					// If the error indicates that the authentication token has expired, request
-					// reauthentication and mark the data as disabled.
-					// Do not refresh immediately when we just got new (faulty) auth data as
-					// immediately trying again is probably not going to help. Instead, we wait
-					// for the next poll cycle.
+					// If the error indicates that the authentication token has expired, request reauthentication
+					// and mark the data as disabled.
+					// Do not refresh immediately when we just got new (faulty) auth data as immediately trying
+					// again is probably not going to help. Instead, we wait for the next poll cycle.
 					a.watcher.Refresh(a.authData.AccountId)
 					a.authData.Enabled = false
 					a.authData.Error = err
