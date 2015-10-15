@@ -87,7 +87,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 		log.Printf("Leaving poll for account %d as penalty count is %d", a.authData.AccountId, a.penaltyCount)
 		a.penaltyCount--
 		return
-	} else if !gotNewAuthData && a.authData.Error != nil { // TODO: Check normal auth error!
+	} else if !gotNewAuthData && a.authData.Error != nil {
 		// Retry to poll the account with a previous auth failure as that results in reauthentication in case of token expiry and in ignoring temporary network issues
 		log.Println("Retrying to poll account with previous auth failure and id", a.authData.AccountId, "(results in reauthentication in case of token expiry and in ignoring temporary network issues)")
 		a.authData.Error = nil
