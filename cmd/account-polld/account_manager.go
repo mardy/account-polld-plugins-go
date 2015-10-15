@@ -28,15 +28,15 @@ import (
 )
 
 type AccountManager struct {
-	watcher                   *accounts.Watcher
-	authData                  accounts.AuthData
-	plugin                    plugins.Plugin
-	interval                  time.Duration
-	postWatch                 chan *PostWatch
-	authChan                  chan accounts.AuthData
-	doneChan                  chan error
-	penaltyCount              int
-	failedAuthenticationTries int // TODO: Rename
+	watcher          *accounts.Watcher
+	authData         accounts.AuthData
+	plugin           plugins.Plugin
+	interval         time.Duration
+	postWatch        chan *PostWatch
+	authChan         chan accounts.AuthData
+	doneChan         chan error
+	penaltyCount     int
+	authFailureCount int
 }
 
 var (
@@ -108,25 +108,25 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	case err := <-a.doneChan:
 		if err == nil {
 			log.Println("Poll for account", a.authData.AccountId, "was successful")
-			a.failedAuthenticationTries = 0
+			a.authFailureCount = 0
 			a.penaltyCount = 0
 		} else {
 			if err != clickNotInstalledError && err != authError { // Do not log the error twice
 				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
 			}
 			if err == authError || err == plugins.ErrTokenExpired {
-				// Increase the failedAuthenticationTries counter, except for when we
+				// Increase the authFailureCount counter, except for when we
 				// did a poll which raised a token expiry error without getting new
 				// auth data in this call to poll.
 				if err != plugins.ErrTokenExpired || gotNewAuthData {
-					log.Println("Increasing the failed authentication tries counter for account", a.authData.AccountId)
-					a.failedAuthenticationTries++
+					log.Println("Increasing the auth failure counter for account", a.authData.AccountId)
+					a.authFailureCount++
 				} else {
-					log.Println("Not increasing the failed authentication tries counter for account", a.authData.AccountId, "as we do not have new auth data")
+					log.Println("Not increasing the auth failure counter for account", a.authData.AccountId, "as we do not have new auth data")
 				}
-				if a.failedAuthenticationTries >= authTriesUntilPenalty {
+				if a.authFailureCount >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
-					a.failedAuthenticationTries = 0
+					a.authFailureCount = 0
 					log.Println(authTriesUntilPenalty, "auth failures in a row for account", a.authData.AccountId, "-> skipping it for the next", a.penaltyCount, "poll cycles")
 				} else if err == plugins.ErrTokenExpired && !gotNewAuthData {
 					// If the error indicates that the authentication token has expired, request
@@ -139,7 +139,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 					a.authData.Error = err
 				}
 			} else if a.penaltyCount < maxCounter {
-				a.failedAuthenticationTries = 0
+				a.authFailureCount = 0
 				a.penaltyCount++
 			}
 		}
