@@ -119,7 +119,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			if err != clickNotInstalledError && err != authError { // Do not log the error twice
 				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
 			}
-			if err == authError {
+			if err == authError || err == plugins.ErrTokenExpired {
 				a.failedAuthenticationTries++
 				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
