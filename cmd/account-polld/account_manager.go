@@ -36,7 +36,7 @@ type AccountManager struct {
 	authChan                  chan accounts.AuthData
 	doneChan                  chan error
 	penaltyCount              int
-	failedAuthenticationTries int
+	failedAuthenticationTries int // TODO: Rename
 }
 
 var (
@@ -134,8 +134,6 @@ func (a *AccountManager) Poll(bootstrap bool) {
 					// Do not refresh immediately when we just got new (faulty) auth data as
 					// immediately trying again is probably not going to help. Instead, we wait
 					// for the next poll cycle.
-					// This needs to be done after the penalty count has been updated in order to
-					// not interfere with the penalty count change in the new account data handler. // TODO: Check!!!
 					a.watcher.Refresh(a.authData.AccountId)
 					a.authData.Enabled = false
 					a.authData.Error = err
