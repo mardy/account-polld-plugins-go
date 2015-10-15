@@ -87,15 +87,10 @@ func (a *AccountManager) Poll(bootstrap bool) {
 		log.Printf("Leaving poll for account %d as penalty count is %d", a.authData.AccountId, a.penaltyCount)
 		a.penaltyCount--
 		return
-	} else if !gotNewAuthData && a.authData.Error != nil {
+	} else if !gotNewAuthData && a.authData.Error != nil { // Not called for token expiry cases!
 		// Retry to poll the account with a previous auth failure as that results in reauthentication in case of token expiry and in ignoring temporary network issues
 		log.Println("Retrying to poll account with previous auth failure and id", a.authData.AccountId, "(results in reauthentication in case of token expiry and in ignoring temporary network issues)")
 		a.authData.Error = nil
-
-		// Reset failed authentication tries counter after the penalty has taken effect
-		if a.failedAuthenticationTries >= authTriesUntilPenalty {
-			a.failedAuthenticationTries = 0
-		}
 	}
 
 	timeout := pollTimeout
@@ -123,6 +118,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				a.failedAuthenticationTries++
 				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
+					a.failedAuthenticationTries = 0
 					log.Println(authTriesUntilPenalty, "auth failures in a row for account", a.authData.AccountId, "-> skipping it for the next", a.penaltyCount, "poll cycles")
 				} else if err == plugins.ErrTokenExpired {
 					// If the error indicates that the authentication token has expired, request
