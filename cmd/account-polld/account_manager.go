@@ -124,20 +124,18 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
 					log.Println(authTriesUntilPenalty, "auth failures in a row for account", a.authData.AccountId, "-> skipping it for the next", a.penaltyCount, "poll cycles")
+				} else if err == plugins.ErrTokenExpired {
+					// If the error indicates that the authentication token has expired, request
+					// reauthentication and mark the data as disabled
+					// This needs to be done after the penalty count has been updated in order to
+					// not interfere with the penalty count change in the new account data handler
+					a.watcher.Refresh(a.authData.AccountId)
+					a.authData.Enabled = false
+					a.authData.Error = err
 				}
 			} else if a.penaltyCount < maxCounter {
 				a.failedAuthenticationTries = 0
 				a.penaltyCount++
-			}
-
-			// If the error indicates that the authentication token has expired, request
-			// reauthentication and mark the data as disabled
-			// This needs to be done after the penalty count has been updated in order to
-			// not interfere with the penalty count change in the new account data handler
-			if err == plugins.ErrTokenExpired {
-				a.watcher.Refresh(a.authData.AccountId)
-				a.authData.Enabled = false
-				a.authData.Error = err
 			}
 		}
 	}
