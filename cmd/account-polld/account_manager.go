@@ -115,7 +115,12 @@ func (a *AccountManager) Poll(bootstrap bool) {
 				log.Println("Poll for account", a.authData.AccountId, "has failed:", err)
 			}
 			if err == authError || err == plugins.ErrTokenExpired {
-				a.failedAuthenticationTries++
+				// Increase the failedAuthenticationTries counter, except for when we
+				// did a poll which raised a token expiry error without getting new
+				// auth data in this call to poll.
+				if err != plugins.ErrTokenExpired || gotNewAuthData {
+					a.failedAuthenticationTries++
+				}
 				if a.failedAuthenticationTries >= authTriesUntilPenalty {
 					a.penaltyCount = authFailurePenalty
 					a.failedAuthenticationTries = 0
