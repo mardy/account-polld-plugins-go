@@ -69,6 +69,8 @@ func (a *AccountManager) Delete() {
 	close(a.doneChan)
 }
 
+// Poll() always needs to be called asynchronously as otherwise qtcontacs' GetAvatar()
+// will raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
 func (a *AccountManager) Poll(bootstrap bool) {
 	gotNewAuthData := false
 	if !a.authData.Enabled {
