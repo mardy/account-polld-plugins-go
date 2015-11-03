@@ -1,3 +1,14 @@
+account-polld (0.1+16.04.20151103-0ubuntu1) xenial; urgency=medium
+
+  [ Niklas Wenzel ]
+  * Fix a timeout error in the qtcontacts module which occured when a
+    notification was shown directly after creating an account (fixes LP:
+    #1498214) (LP: #1498214)
+  * Fix the timeout logic in the qtcontacts module (part of LP:
+    #1498214) (LP: #1498214)
+
+ -- Jonas G. Drange <ci-train-bot@canonical.com>  Tue, 03 Nov 2015 13:40:49 +0000
+
 account-polld (0.1+15.10.20151016.1-0ubuntu1) wily; urgency=medium
 
   [ Alberto Mardegan ]
