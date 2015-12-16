@@ -190,45 +190,43 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 			// (minus currently presented notifications). If
 			// overflowed and no overflow present, present that.
 			var notifs []*plugins.PushMessage
-			var nonPersistentnotifs []*plugins.PushMessage
-			add := batch.Limit - tagmap[batch.Tag]
-			if add > 0 {
-				// there are less notifications presented than
-				// the limit; we can show some
-				if len(batch.Messages) < add {
-					notifs = batch.Messages
-				} else {
-					notifs = batch.Messages[:add]
-					nonPersistentnotifs = batch.Messages[add:]
-					log.Printf("Adding nonPersistentnotifs: %v", nonPersistentnotifs)
+
+			// Warning: ugly.
+			// If we have an overflow notification, we do not make any
+			// more persisting notification, we just create transient cards.
+			if tagmap[batch.Tag + "-overflow"] > 0 {
+				notifs = batch.Messages
+				for _, n := range notifs {
+					n.Notification.Card.Persist = false
+				}
+			} else {
+				add := batch.Limit - tagmap[batch.Tag]
+				if add > 0 {
+					// there are less notifications presented than
+					// the limit; we can show some
+					if len(batch.Messages) < add {
+						notifs = batch.Messages
+					} else {
+						notifs = batch.Messages[:add]
+					}
+				}
+				for _, n := range notifs {
+					n.Notification.Tag = batch.Tag
+				}
+				ofTag := batch.Tag + "-overflow"
+				if len(notifs) < len(batch.Messages) {
+					// overflow
+					n := batch.OverflowHandler(batch.Messages[len(notifs):])
+					n.Notification.Tag = ofTag
+					if tagmap[ofTag] != 0 {
+						n.Notification.Sound = ""
+						n.Notification.Vibrate = nil
+						n.Notification.Card = nil
+					}
+					notifs = append(notifs, n)
 				}
 			}
-			for _, n := range notifs {
-				n.Notification.Tag = batch.Tag
-			}
-			for _, n := range nonPersistentnotifs {
-				n.Notification.Tag = batch.Tag
-				n.Notification.Card.Persist = false
-				log.Printf("Made %v non persistent", n)
-			}
-			ofTag := batch.Tag + "-overflow"
-			if len(notifs) < len(batch.Messages) {
-				// overflow
-				n := batch.OverflowHandler(batch.Messages[len(notifs):])
-				n.Notification.Tag = ofTag
-				if tagmap[ofTag] != 0 {
-					// Do not make a beep here, since the notification
-					// already have been presented.
-					n.Notification.Sound = ""
-					n.Notification.Vibrate = nil
-					n.Notification.Card = nil
-				}
-				notifs = append(notifs, n)
-			}
-			log.Printf("notifs before smash", notifs)
-			log.Printf("nonPersistentnotifs before smash", nonPersistentnotifs)
-			notifs = append(notifs, nonPersistentnotifs...)
-			log.Printf("notifs after smash", notifs)
+
 			for _, n := range notifs {
 				var pushMessage string
 				if out, err := json.Marshal(n); err == nil {
