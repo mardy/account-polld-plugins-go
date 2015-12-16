@@ -186,15 +186,16 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 		}
 
 		for _, batch := range post.batches {
+			ofTag := batch.Tag + "-overflow"
+
 			// add individual notifications upto the batch limit
 			// (minus currently presented notifications). If
 			// overflowed and no overflow present, present that.
 			var notifs []*plugins.PushMessage
 
-			// Warning: ugly.
 			// If we have an overflow notification, we do not make any
 			// more persisting notification, we just create transient cards.
-			if tagmap[batch.Tag + "-overflow"] > 0 {
+			if tagmap[ofTag] > 0 {
 				notifs = batch.Messages
 				for _, n := range notifs {
 					n.Notification.Card.Persist = false
@@ -213,7 +214,7 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 				for _, n := range notifs {
 					n.Notification.Tag = batch.Tag
 				}
-				ofTag := batch.Tag + "-overflow"
+
 				if len(notifs) < len(batch.Messages) {
 					// overflow
 					n := batch.OverflowHandler(batch.Messages[len(notifs):])
