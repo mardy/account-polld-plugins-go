@@ -169,63 +169,24 @@ L:
 func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 	for post := range postWatch {
 		obj := bus.Object(POSTAL_SERVICE, pushObjectPath(post.appId))
-		pers, err := obj.Call(POSTAL_INTERFACE, "ListPersistent", post.appId)
-		if err != nil {
-			log.Println("Could not list previous messages:", err)
-			continue
-		}
-		var tags []string
-		tagmap := make(map[string]int)
-		if err := pers.Args(&tags); err != nil {
-			log.Println("Could not get tags:", err)
-			continue
-		}
-		log.Printf("Previous messages: %#v\n", tags)
-		for _, tag := range tags {
-			tagmap[tag]++
-		}
 
 		for _, batch := range post.batches {
-			ofTag := batch.Tag + "-overflow"
 
-			// add individual notifications upto the batch limit
-			// (minus currently presented notifications). If
-			// overflowed and no overflow present, present that.
-			var notifs []*plugins.PushMessage
+			notifs := batch.Messages
+			overflowing := len(notifs) > batch.Limit
 
-			// If we have an overflow notification, we do not make any
-			// more persisting notification, we just create transient cards.
-			if tagmap[ofTag] > 0 {
-				notifs = batch.Messages
-				for _, n := range notifs {
-					n.Notification.Card.Persist = false
+			for _, n := range notifs {
+				// We're overflowing, so no popups.
+				// See LP: #1527171
+				if overflowing {
+					n.Notification.Card.Popup = false
 				}
-			} else {
-				add := batch.Limit - tagmap[batch.Tag]
-				if add > 0 {
-					// there are less notifications presented than
-					// the limit; we can show some
-					if len(batch.Messages) < add {
-						notifs = batch.Messages
-					} else {
-						notifs = batch.Messages[:add]
-					}
-				}
-				for _, n := range notifs {
-					n.Notification.Tag = batch.Tag
-				}
+			}
 
-				if len(notifs) < len(batch.Messages) {
-					// overflow
-					n := batch.OverflowHandler(batch.Messages[len(notifs):])
-					n.Notification.Tag = ofTag
-					if tagmap[ofTag] != 0 {
-						n.Notification.Sound = ""
-						n.Notification.Vibrate = nil
-						n.Notification.Card = nil
-					}
-					notifs = append(notifs, n)
-				}
+			if overflowing {
+				n := batch.OverflowHandler(notifs)
+				n.Notification.Card.Persist = false
+				notifs = append(notifs, n)
 			}
 
 			for _, n := range notifs {

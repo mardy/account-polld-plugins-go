@@ -37,8 +37,10 @@ import (
 const (
 	APP_ID           = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
-	// this means 3 individual messages + 1 bundled notification.
-	individualNotificationsLimit = 2
+	// If there's more than 10 emails in one batch, we don't show 10 notification
+	// bubbles, but instead show one summary. We always show all notifications in the
+	// indicator.
+	individualNotificationsLimit = 10
 	pluginName                   = "gmail"
 )
 
