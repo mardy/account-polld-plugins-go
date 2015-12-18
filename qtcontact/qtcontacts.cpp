@@ -25,6 +25,8 @@
 #include <QTimer>
 #include <thread>
 
+#include <QDebug>
+
 #include "qtcontacts.h"
 #include "qtcontacts.hpp"
 #include "qtcontacts.moc"
@@ -47,12 +49,14 @@ int mainloopStart() {
 }
 
 char* getAvatar(char *email) {
+    qDebug() << __PRETTY_FUNCTION__ << "checking" << email;
     QScopedPointer<Avatar> avatar(new Avatar());
     QString thumbnailPath = avatar->retrieveThumbnail(QString(email));
 
     QByteArray byteArray = thumbnailPath.toUtf8();
     char* cString = byteArray.data();
 
+    qDebug() << __PRETTY_FUNCTION__ << "found" << cString;
     return cString;
 }
 
