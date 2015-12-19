@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"log"
@@ -146,25 +147,49 @@ func (p *GmailPlugin) reported(id string) bool {
 	return ok
 }
 
+func stripCtlAndExtFromUTF8(str string) string {
+	return strings.Map(func(r rune) rune {
+		if r >= 32 && r < 127 {
+			return r
+		}
+		return -1
+	}, str)
+}
+
 func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMessage, error) {
 	timestamp := time.Now()
 	pushMsgMap := make(pushes)
 
+	log.Print("createNotifications")
 	for _, msg := range messages {
 		hdr := msg.Payload.mapHeaders()
 
 		from := hdr[hdrFROM]
 		var avatarPath string
 
-		if emailAddress, err := mail.ParseAddress(hdr[hdrFROM]); err == nil {
-			log.Print("gmail plugin checking address", emailAddress, err)
-			if emailAddress.Name != "" {
-				log.Print("gmail plugin address", emailAddress, "had name", emailAddress.Name)
-				from = emailAddress.Name
-				avatarPath = qtcontact.GetAvatar(emailAddress.Address)
-				log.Print("gmail plugin will use avatar", avatarPath)
+		log.Print("parsing address", from)
+		emailAddress, err := mail.ParseAddress(from)
+		if err != nil {
+			// If the email address contains non-ascii characters, we get an
+			// error so we're going to try again, this time mangling the phrase
+			// by removing all non-ascii characters.
+			log.Print("failed to parse addr", err)
+			mangledAddr := stripCtlAndExtFromUTF8(from)
+			mangledEmail, _ := mail.ParseAddress(mangledAddr)
+			if err != nil {
+				emailAddress = mangledEmail
 			}
+			log.Print("failed to parse addr", err)
+		} else {
+			from = emailAddress.Name
 		}
+
+		if emailAddress != nil {
+			log.Print("gmail plugin address", emailAddress)
+			avatarPath = qtcontact.GetAvatar(emailAddress.Address)
+			log.Print("gmail plugin will use avatar", avatarPath)
+		}
+
 		msgStamp := hdr.getTimestamp()
 
 		if _, ok := pushMsgMap[msg.ThreadId]; ok {
