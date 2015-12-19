@@ -23,8 +23,8 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
-	"strings"
 	"time"
 
 	"log"
@@ -54,6 +54,9 @@ var timeDelta = time.Duration(time.Hour * 24)
 
 // trackDelta defines how old messages can be before removed from tracking
 var trackDelta = time.Duration(time.Hour * 24 * 7)
+
+// regexp for identifying non-ascii characters
+var nonAsciiChars, _ = regexp.Compile("[^\x00-\x7F]")
 
 type GmailPlugin struct {
 	// reportedIds holds the messages that have already been notified. This
@@ -147,15 +150,6 @@ func (p *GmailPlugin) reported(id string) bool {
 	return ok
 }
 
-func stripCtlAndExtFromUTF8(str string) string {
-	return strings.Map(func(r rune) rune {
-		if r >= 32 && r < 127 {
-			return r
-		}
-		return -1
-	}, str)
-}
-
 func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMessage, error) {
 	timestamp := time.Now()
 	pushMsgMap := make(pushes)
@@ -170,24 +164,23 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 		log.Print("parsing address", from)
 		emailAddress, err := mail.ParseAddress(from)
 		if err != nil {
+			log.Print("failed to parse addr", err)
 			// If the email address contains non-ascii characters, we get an
 			// error so we're going to try again, this time mangling the phrase
-			// by removing all non-ascii characters.
-			log.Print("failed to parse addr", err)
-			mangledAddr := stripCtlAndExtFromUTF8(from)
+			// by removing all non-ascii characters-we only care about the email
+			// address here anyway.
+			mangledAddr := nonAsciiChars.ReplaceAllString(from, "")
 			mangledEmail, _ := mail.ParseAddress(mangledAddr)
 			if err != nil {
 				emailAddress = mangledEmail
 			}
-			log.Print("failed to parse addr", err)
+			log.Print("Could not parse mangled address", err)
 		} else {
 			from = emailAddress.Name
 		}
 
 		if emailAddress != nil {
-			log.Print("gmail plugin address", emailAddress)
 			avatarPath = qtcontact.GetAvatar(emailAddress.Address)
-			log.Print("gmail plugin will use avatar", avatarPath)
 		}
 
 		msgStamp := hdr.getTimestamp()

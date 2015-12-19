@@ -44,8 +44,8 @@ type PostWatch struct {
 const (
 	SERVICETYPE_WEBAPPS = "webapps"
 
-	SERVICENAME_GMAIL    = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
-	SERVICENAME_TWITTER  = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
+	SERVICENAME_GMAIL   = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+	SERVICENAME_TWITTER = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 )
 
 const (
