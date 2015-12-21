@@ -168,7 +168,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			log.Print("failed to parse addr", err)
 			// If the email address contains non-ascii characters, we get an
 			// error so we're going to try again, this time mangling the phrase
-			// by removing all non-ascii characters-we only care about the email
+			// by removing all non-ascii characters. We only care about the email
 			// address here anyway.
 			mangledAddr := nonAsciiChars.ReplaceAllString(from, "")
 			mangledEmail, _ := mail.ParseAddress(mangledAddr)
