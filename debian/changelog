@@ -1,3 +1,13 @@
+account-polld (0.1+16.04.20151221-0ubuntu1) xenial; urgency=medium
+
+  [ jonas-drange ]
+  * Force parsing of email address even if it violates RFC 5322. Encode
+    icon file paths since unity-notifications require it. Summarize
+    notification bubbles when > 10 in a batch, but never summarize in
+    the indicator. (LP: #1429276)
+
+ -- Jonas G. Drange <ci-train-bot@canonical.com>  Mon, 21 Dec 2015 12:18:40 +0000
+
 account-polld (0.1+16.04.20151103-0ubuntu1) xenial; urgency=medium
 
   [ Niklas Wenzel ]
