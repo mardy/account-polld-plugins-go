@@ -167,8 +167,8 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			// error so we're going to try again, this time mangling the name
 			// by removing all non-ascii characters. We only care about the email
 			// address here anyway.
-			// XXX: We can't check the error message due to [1] and the fact that
-			// vivid still runs go 1.3.
+			// XXX: We can't check the error message due to [1]: the error
+			// message is different in go < 1.3 and > 1.5.
 			// [1] https://github.com/golang/go/issues/12492
 			mangledAddr := nonAsciiChars.ReplaceAllString(from, "")
 			mangledEmail, _ := mail.ParseAddress(mangledAddr)
