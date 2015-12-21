@@ -155,27 +155,26 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 	timestamp := time.Now()
 	pushMsgMap := make(pushes)
 
-	log.Print("createNotifications")
 	for _, msg := range messages {
 		hdr := msg.Payload.mapHeaders()
 
 		from := hdr[hdrFROM]
 		var avatarPath string
 
-		log.Print("parsing address", from)
 		emailAddress, err := mail.ParseAddress(from)
 		if err != nil {
-			log.Print("failed to parse addr", err)
 			// If the email address contains non-ascii characters, we get an
-			// error so we're going to try again, this time mangling the phrase
+			// error so we're going to try again, this time mangling the name
 			// by removing all non-ascii characters. We only care about the email
 			// address here anyway.
+			// XXX: We can't check the error message due to [1] and the fact that
+			// vivid still runs go 1.3.
+			// [1] https://github.com/golang/go/issues/12492
 			mangledAddr := nonAsciiChars.ReplaceAllString(from, "")
 			mangledEmail, _ := mail.ParseAddress(mangledAddr)
 			if err != nil {
 				emailAddress = mangledEmail
 			}
-			log.Print("Could not parse mangled address", err)
 		} else {
 			from = emailAddress.Name
 		}
