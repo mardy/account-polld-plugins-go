@@ -68,7 +68,7 @@ func NewStandardPushMessage(summary, body, action, icon string, epoch int64) *Pu
 				Persist:   true,
 			},
 			Sound:   DefaultSound(),
-			Vibrate: DefaultVibration(),
+			Vibrate: true,
 			Tag:     cmdName,
 		},
 	}
@@ -249,9 +249,4 @@ func FromPersist(pluginName string, accountId uint, data interface{}) (err error
 func DefaultSound() string {
 	// path is searched within XDG_DATA_DIRS
 	return "sounds/ubuntu/notifications/Blip.ogg"
-}
-
-// DefaultVibration returns a Vibrate with the default vibration
-func DefaultVibration() *Vibrate {
-	return &Vibrate{Duration: 1000}
 }
