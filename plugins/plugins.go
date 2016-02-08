@@ -68,7 +68,7 @@ func NewStandardPushMessage(summary, body, action, icon string, epoch int64) *Pu
 				Persist:   true,
 			},
 			Sound:   DefaultSound(),
-			Vibrate: DefaultVibration(),
+			Vibrate: true,
 			Tag:     cmdName,
 		},
 	}
@@ -110,7 +110,7 @@ type Notification struct {
 	// Card represents a specific bubble to give to the user
 	Card *Card `json:"card,omitempty"`
 	// Vibrate is the haptic feedback part of a notification.
-	Vibrate *Vibrate `json:"vibrate,omitempty"`
+	Vibrate bool `json:"vibrate,omitempty"`
 	// EmblemCounter represents and application counter hint
 	// related to the notification.
 	EmblemCounter *EmblemCounter `json:"emblem-counter,omitempty"`
@@ -136,19 +136,6 @@ type Card struct {
 	Persist bool `json:"persist,omitempty"`
 	// Seconds since the unix epoch, useful for persistent cards.
 	Timestamp int64 `json:"Timestamp,omitempty"`
-}
-
-// Vibrate is part of a notification and represents the user haptic hints
-// for a specific notification.
-//
-// Duration cannot be used together with Pattern and Repeat.
-type Vibrate struct {
-	// Duration in milliseconds.
-	Duration uint `json:"duration,omitempty"`
-	// Pattern is a list of on->off durations that create a pattern.
-	Pattern []uint `json:"pattern,omitempty"`
-	// Repeat is the number of times a Pattern is to be repeated.
-	Repeat uint `json:"repeat,omitempty"`
 }
 
 // EmblemCounter is part of a notification and represents the application visual
@@ -249,9 +236,4 @@ func FromPersist(pluginName string, accountId uint, data interface{}) (err error
 func DefaultSound() string {
 	// path is searched within XDG_DATA_DIRS
 	return "sounds/ubuntu/notifications/Blip.ogg"
-}
-
-// DefaultVibration returns a Vibrate with the default vibration
-func DefaultVibration() *Vibrate {
-	return &Vibrate{Duration: 200}
 }
