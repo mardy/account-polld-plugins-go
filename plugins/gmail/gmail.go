@@ -56,8 +56,8 @@ var timeDelta = time.Duration(time.Hour * 24)
 // trackDelta defines how old messages can be before removed from tracking
 var trackDelta = time.Duration(time.Hour * 24 * 7)
 
-// relativeTrackDelta is the same as trackDelta
-var relativeTrackDelta string = "7d"
+// relativeTimeDelta is the same as timeDelta
+var relativeTimeDelta string = "7d"
 
 // regexp for identifying non-ascii characters
 var nonAsciiChars, _ = regexp.Compile("[^\x00-\x7F]")
@@ -183,7 +183,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			// We only want the Name if the first ParseAddress
 			// call was successful. I.e. we do not want the name
 			// from a mangled email address.
-			if (emailAddress.Name != "") {
+			if emailAddress.Name != "" {
 				from = emailAddress.Name
 			}
 		}
@@ -336,7 +336,7 @@ func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, er
 	// get all unread inbox emails received after
 	// the last time we checked. If this is the first
 	// time we check, get unread emails after trackDelta
-	query.Add("q", fmt.Sprintf("is:unread in:inbox newer_than:%s", relativeTrackDelta))
+	query.Add("q", fmt.Sprintf("is:unread in:inbox newer_than:%s", relativeTimeDelta))
 	u.RawQuery = query.Encode()
 
 	req, err := http.NewRequest("GET", u.String(), nil)
