@@ -178,14 +178,11 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			if err != nil {
 				emailAddress = mangledEmail
 			}
-		} else {
-
+		} else if emailAddress.Name != "" {
 			// We only want the Name if the first ParseAddress
 			// call was successful. I.e. we do not want the name
 			// from a mangled email address.
-			if emailAddress.Name != "" {
-				from = emailAddress.Name
-			}
+			from = emailAddress.Name
 		}
 
 		if emailAddress != nil {
@@ -335,7 +332,7 @@ func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, er
 
 	// get all unread inbox emails received after
 	// the last time we checked. If this is the first
-	// time we check, get unread emails after trackDelta
+	// time we check, get unread emails after timeDelta
 	query.Add("q", fmt.Sprintf("is:unread in:inbox newer_than:%s", relativeTimeDelta))
 	u.RawQuery = query.Encode()
 
