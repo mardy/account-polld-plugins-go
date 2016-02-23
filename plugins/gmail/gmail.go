@@ -171,8 +171,8 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			// message is different in go < 1.3 and > 1.5.
 			// [1] https://github.com/golang/go/issues/12492
 			mangledAddr := nonAsciiChars.ReplaceAllString(from, "")
-			mangledEmail, _ := mail.ParseAddress(mangledAddr)
-			if err != nil {
+			mangledEmail, mangledParseError := mail.ParseAddress(mangledAddr)
+			if mangledParseError == nil {
 				emailAddress = mangledEmail
 			}
 		} else {
