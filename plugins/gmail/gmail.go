@@ -57,7 +57,7 @@ var timeDelta = time.Duration(time.Hour * 24)
 var trackDelta = time.Duration(time.Hour * 24 * 7)
 
 // relativeTimeDelta is the same as timeDelta
-var relativeTimeDelta string = "7d"
+var relativeTimeDelta string = "1d"
 
 // regexp for identifying non-ascii characters
 var nonAsciiChars, _ = regexp.Compile("[^\x00-\x7F]")
