@@ -1,3 +1,16 @@
+account-polld (0.1+16.04.20160308.1-0ubuntu1) xenial; urgency=medium
+
+  [ Niklas Wenzel ]
+  * Fix vibrations format for notifications (LP: #1431887)
+
+  [ jonas-drange ]
+  * Drop filter on category, limit the query in time (the same day).
+    Also, fix bug where emails violating rfc2047 would not produce
+    notifications. (LP: #1495904)
+  * do not ignore the mangled address
+
+ -- Jonas G. Drange <ci-train-bot@canonical.com>  Tue, 08 Mar 2016 14:12:37 +0000
+
 account-polld (0.1+16.04.20151221-0ubuntu1) xenial; urgency=medium
 
   [ jonas-drange ]
