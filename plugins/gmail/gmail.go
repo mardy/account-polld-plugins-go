@@ -56,6 +56,9 @@ var timeDelta = time.Duration(time.Hour * 24)
 // trackDelta defines how old messages can be before removed from tracking
 var trackDelta = time.Duration(time.Hour * 24 * 7)
 
+// relativeTimeDelta is the same as timeDelta
+var relativeTimeDelta string = "1d"
+
 // regexp for identifying non-ascii characters
 var nonAsciiChars, _ = regexp.Compile("[^\x00-\x7F]")
 
@@ -175,7 +178,10 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			if err != nil {
 				emailAddress = mangledEmail
 			}
-		} else {
+		} else if emailAddress.Name != "" {
+			// We only want the Name if the first ParseAddress
+			// call was successful. I.e. we do not want the name
+			// from a mangled email address.
 			from = emailAddress.Name
 		}
 
@@ -324,10 +330,10 @@ func (p *GmailPlugin) requestMessageList(accessToken string) (*http.Response, er
 
 	query := u.Query()
 
-	// only get unread, from the personal category that are in the inbox.
-	// if we want to widen the search scope we need to add more categories
-	// like: '(category:personal or category:updates or category:forums)' ...
-	query.Add("q", "is:unread category:personal in:inbox")
+	// get all unread inbox emails received after
+	// the last time we checked. If this is the first
+	// time we check, get unread emails after timeDelta
+	query.Add("q", fmt.Sprintf("is:unread in:inbox newer_than:%s", relativeTimeDelta))
 	u.RawQuery = query.Encode()
 
 	req, err := http.NewRequest("GET", u.String(), nil)
