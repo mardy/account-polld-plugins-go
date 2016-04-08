@@ -27,7 +27,8 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
+        "launchpad.net/account-polld/plugins/gmail"
+        "launchpad.net/account-polld/plugins/gcalendar"
 	"launchpad.net/account-polld/plugins/twitter"
 	"launchpad.net/account-polld/pollbus"
 	"launchpad.net/account-polld/qtcontact"
@@ -46,6 +47,7 @@ const (
 
 	SERVICENAME_GMAIL   = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
+        SERVICENAME_GCALENDAR = "com.ubuntu.calendar_calendar"
 )
 
 const (
@@ -127,6 +129,9 @@ L:
 				case SERVICENAME_GMAIL:
 					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
 					plugin = gmail.New(data.AccountId)
+				case SERVICENAME_GCALENDAR:
+					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+					plugin = gcalendar.New(data.AccountId)
 				case SERVICENAME_TWITTER:
 					// This is just stubbed until the plugin exists.
 					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
