@@ -34,7 +34,7 @@ const (
 	pluginName  = "gcalendar"
 )
 
-var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/primary/events")
+var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/primary/")
 
 
 type GCalendarPlugin struct {
@@ -130,14 +130,13 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 }
 
 func (p *GCalendarPlugin) requestChanges(accessToken string, lastSyncDate string) (*http.Response, error) {
-	u, err := baseUrl.Parse("messages")
+	u, err := baseUrl.Parse("events")
 	if err != nil {
 		return nil, err
 	}
 
     //GET https://www.googleapis.com/calendar/v3/calendars/primary/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
-
-	query := u.Query()
+	query := baseUrl.Query()
     query.Add("showDeleted", "true")
     query.Add("singleEvents", "true")
     query.Add("fields", "description,items(summary,etag)")
@@ -145,13 +144,13 @@ func (p *GCalendarPlugin) requestChanges(accessToken string, lastSyncDate string
     if len(lastSyncDate) > 0 {   
         query.Add("updatedMin", lastSyncDate)
     }
-	u.RawQuery = query.Encode()
+    u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest("GET", u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+    req, err := http.NewRequest("GET", u.String(), nil)
+    if err != nil {
+        return nil, err
+    }
+    req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	return http.DefaultClient.Do(req)
+    return http.DefaultClient.Do(req)
 }
