@@ -42,9 +42,9 @@ type PostWatch struct {
 
 /* Use identifiers and API keys provided by the respective webapps which are the official
    end points for the notifications */
-const (
-	SERVICETYPE_WEBAPPS = "webapps"
+var SERVICETYPES = []string {"webapps", "calendar"}
 
+const (
 	SERVICENAME_GMAIL   = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
@@ -55,6 +55,7 @@ const (
 	POSTAL_INTERFACE        = "com.ubuntu.Postal"
 	POSTAL_OBJECT_PATH_PART = "/com/ubuntu/Postal/"
 )
+
 
 var mainLoopOnce sync.Once
 
@@ -84,7 +85,9 @@ func main() {
 
 	pollBus := pollbus.New(bus)
 	go postOffice(bus, postWatch)
-	go monitorAccounts(postWatch, pollBus)
+	for _,accountType := range SERVICETYPES {
+		go monitorAccounts(postWatch, pollBus, accountType)
+	}
 
 	if err := pollBus.Init(); err != nil {
 		log.Fatal("Issue while setting up the poll bus:", err)
@@ -94,9 +97,9 @@ func main() {
 	<-done
 }
 
-func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
-	// Note: the accounts monitored are all linked to webapps right now
-	watcher := accounts.NewWatcher(SERVICETYPE_WEBAPPS)
+func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus, serviceType string) {
+	watcher := accounts.NewWatcher(serviceType)
+
 	mgr := make(map[uint]*AccountManager)
 
 	var wg sync.WaitGroup
