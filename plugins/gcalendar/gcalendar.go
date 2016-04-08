@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"log"
 
@@ -89,6 +90,9 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	}
 
     if len(messages) > 0 {
+        // Update last sync date
+        lastSyncDate = time.Now().UTC().Format(time.RFC3339)
+        persist(p.accountId, lastSyncDate)
         log.Print("Request calendar sync")
     } else {
         log.Print("No sync is required.")
@@ -119,7 +123,7 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 	}
 
     for _, ev := range events.Events {
-        log.Print("Found event: ", ev.Etag, ev.Summary)	
+        log.Print("Found event: ", ev.Etag, ev.Summary)
 	}
 	
 	return events.Events, nil
