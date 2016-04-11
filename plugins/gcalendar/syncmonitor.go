@@ -31,15 +31,15 @@ const (
 
 type SyncMonitor struct {
 	conn     *dbus.Connection
-    obj      *dbus.ObjectProxy
+	obj      *dbus.ObjectProxy
 }
 
 func NewSyncMonitor() *SyncMonitor {
-    conn, err := dbus.Connect(dbus.SessionBus)
-    if err != nil {
-        log.Print("Fail to connect with session bus: ", err)
-        return nil
-    }
+	conn, err := dbus.Connect(dbus.SessionBus)
+	if err != nil {
+		log.Print("Fail to connect with session bus: ", err)
+		return nil
+	}
 
 	p := &SyncMonitor{
 		conn:   conn,
@@ -53,18 +53,18 @@ func clean(p *SyncMonitor) {
 }
 
 func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSyncDate string, err error)  {
-    message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), serviceName)
-    if err != nil {
-        return "", err
-    } else {
-        var lastSyncDate string
-        err = message.Args(&lastSyncDate)
-        return lastSyncDate, err
-    }
+	message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), serviceName)
+	if err != nil {
+		return "", err
+	} else {
+		var lastSyncDate string
+		err = message.Args(&lastSyncDate)
+		return lastSyncDate, err
+	}
 }
 
 func (p *SyncMonitor) SyncAccount(accountId uint, serviceName string) (err error) {
-    _, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), serviceName)
-    return err
+	_, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), serviceName)
+	return err
 }
 

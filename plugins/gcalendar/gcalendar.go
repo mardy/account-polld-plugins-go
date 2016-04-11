@@ -53,8 +53,8 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		authData.AccessToken = token
 	}
 
-    syncMonitor := NewSyncMonitor()
-    lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar")
+	syncMonitor := NewSyncMonitor()
+	lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar")
 	if err != nil {
 		log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err)
 	} else {
@@ -66,23 +66,23 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		return nil, err
 	}
 
-    messages, err := p.parseChangesResponse(resp)
+	messages, err := p.parseChangesResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
-    if len(messages) > 0 {
-        // Update last sync date
-        log.Print("Request calendar sync")
-        err = syncMonitor.SyncAccount(p.accountId, "calendar")
-        if err != nil {
-            log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
-        }
-    } else {
-        log.Print("No sync is required.")
-    }
+	if len(messages) > 0 {
+		// Update last sync date
+		log.Print("Request calendar sync")
+		err = syncMonitor.SyncAccount(p.accountId, "calendar")
+		if err != nil {
+			log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
+		}
+	} else {
+		log.Print("No sync is required.")
+	}
 
-    return nil, nil
+	return nil, nil
 }
 
 
@@ -106,8 +106,8 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 		return nil, err
 	}
 
-    for _, ev := range events.Events {
-        log.Print("Found event: ", ev.Etag, ev.Summary)
+	for _, ev := range events.Events {
+		log.Print("Found event: ", ev.Etag, ev.Summary)
 	}
 	
 	return events.Events, nil
@@ -119,22 +119,22 @@ func (p *GCalendarPlugin) requestChanges(accessToken string, lastSyncDate string
 		return nil, err
 	}
 
-    //GET https://www.googleapis.com/calendar/v3/calendars/primary/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
+	//GET https://www.googleapis.com/calendar/v3/calendars/primary/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
 	query := baseUrl.Query()
-    query.Add("showDeleted", "true")
-    query.Add("singleEvents", "true")
-    query.Add("fields", "description,items(summary,etag)")
-    query.Add("maxResults", "1")
-    if len(lastSyncDate) > 0 {   
-        query.Add("updatedMin", lastSyncDate)
-    }
-    u.RawQuery = query.Encode()
+	query.Add("showDeleted", "true")
+	query.Add("singleEvents", "true")
+	query.Add("fields", "description,items(summary,etag)")
+	query.Add("maxResults", "1")
+	if len(lastSyncDate) > 0 {   
+		query.Add("updatedMin", lastSyncDate)
+	}
+	u.RawQuery = query.Encode()
 
-    req, err := http.NewRequest("GET", u.String(), nil)
-    if err != nil {
-        return nil, err
-    }
-    req.Header.Set("Authorization", "Bearer "+accessToken)
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-    return http.DefaultClient.Do(req)
+	return http.DefaultClient.Do(req)
 }
