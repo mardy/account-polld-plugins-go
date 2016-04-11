@@ -53,7 +53,7 @@ func clean(p *SyncMonitor) {
 }
 
 func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSyncDate string, err error)  {
-    message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", accountId, serviceName)
+    message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), serviceName)
     if err != nil {
         return "", err
     } else {
@@ -64,7 +64,7 @@ func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSync
 }
 
 func (p *SyncMonitor) SyncAccount(accountId uint, serviceName string) (err error) {
-    _, err = p.obj.Call(busInterface, "syncAccount", accountId, serviceName)
+    _, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), serviceName)
     return err
 }
 
