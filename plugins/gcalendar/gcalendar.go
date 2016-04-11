@@ -21,8 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
-
 	"log"
 
 	"launchpad.net/account-polld/accounts"
@@ -41,23 +39,6 @@ type GCalendarPlugin struct {
 	accountId   uint
 }
 
-func lastSyncDateFromPersist(accountId uint) (lastSyncDate string, err error) {
-	err = plugins.FromPersist(pluginName, accountId, &lastSyncDate)
-	if err != nil {
-		return "", err
-	}
-    return lastSyncDate, nil
-}
-
-func persist(accountId uint, lastSyncDate string) (err error) {
-	err = plugins.Persist(pluginName, accountId, lastSyncDate)
-	if err != nil {
-		log.Print("calendar plugin ", accountId, ": failed to save state: ", err)
-        return err
-	}
-	return nil
-}
-
 func New(accountId uint) *GCalendarPlugin {
 	return &GCalendarPlugin{accountId: accountId}
 }
@@ -72,7 +53,8 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		authData.AccessToken = token
 	}
 
-    lastSyncDate, err := lastSyncDateFromPersist(p.accountId)
+    syncMonitor := NewSyncMonitor()
+    lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar")
 	if err != nil {
 		log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err)
 	} else {
@@ -91,9 +73,11 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 
     if len(messages) > 0 {
         // Update last sync date
-        lastSyncDate = time.Now().UTC().Format(time.RFC3339)
-        persist(p.accountId, lastSyncDate)
         log.Print("Request calendar sync")
+        err = syncMonitor.SyncAccount(p.accountId, "calendar")
+        if err != nil {
+            log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
+        }
     } else {
         log.Print("No sync is required.")
     }
