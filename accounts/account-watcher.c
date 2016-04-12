@@ -89,6 +89,7 @@ static void account_info_free(AccountInfo *info) {
 static void account_info_notify(AccountInfo *info, GError *error) {
     AgService *service = ag_account_service_get_service(info->account_service);
     const char *service_name = ag_service_get_name(service);
+    const char *service_type = ag_service_get_service_type(service);
     char *client_id = NULL;
     char *client_secret = NULL;
     char *access_token = NULL;
@@ -112,6 +113,7 @@ static void account_info_notify(AccountInfo *info, GError *error) {
 
     info->watcher->callback(info->watcher,
                             info->account_id,
+                            service_type,
                             service_name,
                             error,
                             info->enabled,

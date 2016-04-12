@@ -22,6 +22,7 @@ typedef struct _AccountWatcher AccountWatcher;
 
 typedef void (*AccountEnabledCallback)(AccountWatcher *watcher,
                                        unsigned int account_id,
+                                       const char *service_type,
                                        const char *service_name,
                                        GError *error,
                                        int enabled,
