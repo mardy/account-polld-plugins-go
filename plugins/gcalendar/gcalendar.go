@@ -54,6 +54,11 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	}
 
 	syncMonitor := NewSyncMonitor()
+	if syncMonitor == nil {
+		log.Print("Sync monitor not available yet.")
+		return nil, nil
+	}
+
 	lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar")
 	if err != nil {
 		log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err)

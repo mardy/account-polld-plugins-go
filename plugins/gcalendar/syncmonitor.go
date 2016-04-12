@@ -41,6 +41,15 @@ func NewSyncMonitor() *SyncMonitor {
 		return nil
 	}
 
+	// check if sync monitor is available
+	name := conn.RequestName(busName, dbus.NameFlagDoNotQueue)
+	if <-name.C != dbus.ErrNameExists {
+		log.Print("SyncMonitor does not exists.")
+		name.Release()
+		return nil
+	}
+	name.Release()
+
 	p := &SyncMonitor{
 		conn:   conn,
 		obj:    conn.Object(busName, busPath),
@@ -50,6 +59,9 @@ func NewSyncMonitor() *SyncMonitor {
 }
 
 func clean(p *SyncMonitor) {
+	if p.conn != nil {
+		p.conn.Close()
+	}
 }
 
 func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSyncDate string, err error)  {
