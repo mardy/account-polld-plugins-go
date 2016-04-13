@@ -39,7 +39,6 @@ type Watcher struct {
 type AuthData struct {
 	AccountId   uint
 	ServiceName string
-	ServiceType string
 	Error       error
 	Enabled     bool
 
@@ -77,7 +76,7 @@ func (w *Watcher) Refresh(accountId uint) {
 }
 
 //export authCallback
-func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
+func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
 	// Ideally the first argument would be of type
 	// *C.AccountWatcher, but that fails with Go 1.2.
 	authChannelsLock.Lock()
@@ -91,7 +90,6 @@ func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char,
 	var data AuthData
 	data.AccountId = uint(accountId)
 	data.ServiceName = C.GoString(serviceName)
-	data.ServiceType = C.GoString(serviceType)
 	if error != nil {
 		data.Error = errors.New(C.GoString((*C.char)(error.message)))
 	}

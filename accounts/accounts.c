@@ -11,8 +11,7 @@ AccountWatcher *watch_for_service_type(const char *service_type) {
          * prototype we expect.
          */
         void (*unused)(void *watcher,
-                       unsigned int account_id, 
-                       char *service_type, char *service_name,
+                       unsigned int account_id, char *service_name,
                        GError *error, int enabled,
                        char *client_id, char *client_secret,
                        char *access_token, char *token_secret,
