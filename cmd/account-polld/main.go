@@ -27,8 +27,8 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/gcalendar"
+	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/twitter"
 	"launchpad.net/account-polld/pollbus"
 	"launchpad.net/account-polld/qtcontact"
@@ -42,11 +42,11 @@ type PostWatch struct {
 
 /* Use identifiers and API keys provided by the respective webapps which are the official
    end points for the notifications */
-var SERVICETYPES = []string {"webapps", "calendar"}
+var SERVICETYPES = []string{"webapps", "calendar"}
 
 const (
-	SERVICENAME_GMAIL   = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
-	SERVICENAME_TWITTER = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
+	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
+	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
 )
 
@@ -55,7 +55,6 @@ const (
 	POSTAL_INTERFACE        = "com.ubuntu.Postal"
 	POSTAL_OBJECT_PATH_PART = "/com/ubuntu/Postal/"
 )
-
 
 var mainLoopOnce sync.Once
 
@@ -85,7 +84,7 @@ func main() {
 
 	pollBus := pollbus.New(bus)
 	go postOffice(bus, postWatch)
-	for _,accountType := range SERVICETYPES {
+	for _, accountType := range SERVICETYPES {
 		go monitorAccounts(postWatch, pollBus, accountType)
 	}
 

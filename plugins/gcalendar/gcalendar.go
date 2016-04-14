@@ -18,25 +18,24 @@ package gcalendar
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"log"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 )
 
 const (
-	APP_ID      = "com.ubuntu.calendar_calendar"
-	pluginName  = "gcalendar"
+	APP_ID     = "com.ubuntu.calendar_calendar"
+	pluginName = "gcalendar"
 )
 
 var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/primary/")
 
-
 type GCalendarPlugin struct {
-	accountId   uint
+	accountId uint
 }
 
 func New(accountId uint) *GCalendarPlugin {
@@ -91,7 +90,6 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	return nil, nil
 }
 
-
 func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
@@ -115,7 +113,7 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 	for _, ev := range events.Events {
 		log.Print("Found event: ", ev.Etag, ev.Summary)
 	}
-	
+
 	return events.Events, nil
 }
 
@@ -131,7 +129,7 @@ func (p *GCalendarPlugin) requestChanges(accessToken string, lastSyncDate string
 	query.Add("singleEvents", "true")
 	query.Add("fields", "description,items(summary,etag)")
 	query.Add("maxResults", "1")
-	if len(lastSyncDate) > 0 {   
+	if len(lastSyncDate) > 0 {
 		query.Add("updatedMin", lastSyncDate)
 	}
 	u.RawQuery = query.Encode()

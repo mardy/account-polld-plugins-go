@@ -17,8 +17,8 @@
 package gcalendar
 
 import (
-	"runtime"
 	"log"
+	"runtime"
 
 	"launchpad.net/go-dbus/v1"
 )
@@ -30,8 +30,8 @@ const (
 )
 
 type SyncMonitor struct {
-	conn     *dbus.Connection
-	obj      *dbus.ObjectProxy
+	conn *dbus.Connection
+	obj  *dbus.ObjectProxy
 }
 
 func NewSyncMonitor() *SyncMonitor {
@@ -43,8 +43,8 @@ func NewSyncMonitor() *SyncMonitor {
 
 	log.Print("SynMonitor proxy created!")
 	p := &SyncMonitor{
-		conn:   conn,
-		obj:    conn.Object(busName, busPath),
+		conn: conn,
+		obj:  conn.Object(busName, busPath),
 	}
 	runtime.SetFinalizer(p, clean)
 	return p
@@ -57,7 +57,7 @@ func clean(p *SyncMonitor) {
 	}
 }
 
-func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSyncDate string, err error)  {
+func (p *SyncMonitor) LastSyncDate(accountId uint, serviceName string) (lastSyncDate string, err error) {
 	message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), serviceName)
 	if err != nil {
 		return "", err
@@ -72,4 +72,3 @@ func (p *SyncMonitor) SyncAccount(accountId uint, serviceName string) (err error
 	_, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), serviceName)
 	return err
 }
-

@@ -20,7 +20,6 @@ import (
 	"fmt"
 )
 
-
 // eventList holds a response to call to Calendar.events: list
 // defined in https://developers.google.com/google-apps/calendar/v3/reference/events/list#response
 type eventList struct {
@@ -41,7 +40,6 @@ type event struct {
 func (e event) String() string {
 	return fmt.Sprintf("Id: %s, snippet: '%s'\n", e.Etag, e.Summary)
 }
-
 
 type errorResp struct {
 	Err struct {
