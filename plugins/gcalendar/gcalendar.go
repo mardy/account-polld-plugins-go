@@ -84,7 +84,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 			log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
 		}
 	} else {
-		log.Print("No sync is required.")
+		log.Print("Found no calendar updates for account: ", p.accountId)
 	}
 
 	return nil, nil

@@ -127,7 +127,7 @@ L:
 				}
 			} else if data.Enabled {
 				var plugin plugins.Plugin
-				log.Println("Creat plugin for service: ", data.ServiceName)
+				log.Println("Create plugin for service: ", data.ServiceName)
 				switch data.ServiceName {
 				case SERVICENAME_GMAIL:
 					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)

@@ -41,7 +41,6 @@ func NewSyncMonitor() *SyncMonitor {
 		return nil
 	}
 
-	log.Print("SynMonitor proxy created!")
 	p := &SyncMonitor{
 		conn: conn,
 		obj:  conn.Object(busName, busPath),
@@ -51,7 +50,6 @@ func NewSyncMonitor() *SyncMonitor {
 }
 
 func clean(p *SyncMonitor) {
-	log.Print("SynMonitor proxy destroyed.")
 	if p.conn != nil {
 		p.conn.Close()
 	}
