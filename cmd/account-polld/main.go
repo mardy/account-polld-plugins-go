@@ -176,9 +176,10 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 			overflowing := len(notifs) > batch.Limit
 
 			for i, n := range notifs {
-				// Vibrate only on first message.
+				// Play sound and vibrate on first notif only.
 				if i > 0 {
 					n.Notification.Vibrate = false
+					n.Notification.Sound = ""
 				}
 
 				// We're overflowing, so no popups.
