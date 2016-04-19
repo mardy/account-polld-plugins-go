@@ -40,11 +40,17 @@ type PostWatch struct {
 	batches []*plugins.PushMessageBatch
 }
 
+type AccountKey struct {
+	serviceType string
+	accountId   uint
+}
+
 /* Use identifiers and API keys provided by the respective webapps which are the official
    end points for the notifications */
-var SERVICETYPES = []string{"webapps", "calendar"}
-
 const (
+	SERVICETYPE_WEBAPPS  = "webapps"
+	SERVICETYPE_CALENDAR = "calendar"
+
 	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
@@ -84,9 +90,7 @@ func main() {
 
 	pollBus := pollbus.New(bus)
 	go postOffice(bus, postWatch)
-	for _, accountType := range SERVICETYPES {
-		go monitorAccounts(postWatch, pollBus, accountType)
-	}
+	go monitorAccounts(postWatch, pollBus)
 
 	if err := pollBus.Init(); err != nil {
 		log.Fatal("Issue while setting up the poll bus:", err)
@@ -96,64 +100,78 @@ func main() {
 	<-done
 }
 
-func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus, serviceType string) {
-	watcher := accounts.NewWatcher(serviceType)
+func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
+	watchers := make(map[string]*accounts.Watcher)
+	watchers[SERVICETYPE_WEBAPPS] = accounts.NewWatcher(SERVICETYPE_WEBAPPS)
+	watchers[SERVICETYPE_CALENDAR] = accounts.NewWatcher(SERVICETYPE_CALENDAR)
 
-	mgr := make(map[uint]*AccountManager)
+	mgr := make(map[AccountKey]*AccountManager)
 
 	var wg sync.WaitGroup
 
-L:
-	for {
-		select {
-		case data := <-watcher.C:
-			if account, ok := mgr[data.AccountId]; ok {
-				if data.Enabled {
-					log.Println("New account data for existing account with id", data.AccountId)
-					account.penaltyCount = 0
-					account.updateAuthData(data)
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						// Poll() needs to be called asynchronously as otherwise qtcontacs' GetAvatar() will
-						// raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
-						account.Poll(false)
-					}()
-					// No wg.Wait() here as it would break GetAvatar() again.
-					// Instead we have a wg.Wait() before the PollChan polling below.
-				} else {
-					account.Delete()
-					delete(mgr, data.AccountId)
-				}
-			} else if data.Enabled {
-				var plugin plugins.Plugin
-				log.Println("Create plugin for service: ", data.ServiceName)
-				switch data.ServiceName {
-				case SERVICENAME_GMAIL:
-					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-					plugin = gmail.New(data.AccountId)
-				case SERVICENAME_GCALENDAR:
-					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-					plugin = gcalendar.New(data.AccountId)
-				case SERVICENAME_TWITTER:
-					// This is just stubbed until the plugin exists.
-					log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
-					plugin = twitter.New()
-				default:
-					log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
-					continue L
-				}
-				mgr[data.AccountId] = NewAccountManager(watcher, postWatch, plugin)
-				mgr[data.AccountId].updateAuthData(data)
+	pullAccount := func(data accounts.AuthData) bool {
+		accountKey := AccountKey{data.ServiceType, data.AccountId}
+		if account, ok := mgr[accountKey]; ok {
+			if data.Enabled {
+				log.Println("New account data for existing account with id", data.AccountId)
+				account.penaltyCount = 0
+				account.updateAuthData(data)
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					// Poll() needs to be called asynchronously as otherwise qtcontacs' GetAvatar() will
 					// raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
-					mgr[data.AccountId].Poll(true)
+					account.Poll(false)
 				}()
 				// No wg.Wait() here as it would break GetAvatar() again.
 				// Instead we have a wg.Wait() before the PollChan polling below.
+			} else {
+				account.Delete()
+				delete(mgr, accountKey)
+			}
+		} else if data.Enabled {
+			var plugin plugins.Plugin
+			log.Println("Creat plugin for service: ", data.ServiceName)
+			switch data.ServiceName {
+			case SERVICENAME_GMAIL:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = gmail.New(data.AccountId)
+			case SERVICENAME_GCALENDAR:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = gcalendar.New(data.AccountId)
+			case SERVICENAME_TWITTER:
+				// This is just stubbed until the plugin exists.
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = twitter.New()
+			default:
+				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
+				return false
+			}
+			mgr[accountKey] = NewAccountManager(watchers[data.ServiceType], postWatch, plugin)
+			mgr[accountKey].updateAuthData(data)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				// Poll() needs to be called asynchronously as otherwise qtcontacs' GetAvatar() will
+				// raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
+				mgr[accountKey].Poll(true)
+			}()
+			// No wg.Wait() here as it would break GetAvatar() again.
+			// Instead we have a wg.Wait() before the PollChan polling below.
+		}
+		return true
+	}
+
+L:
+	for {
+		select {
+		case data := <-watchers[SERVICETYPE_CALENDAR].C:
+			if pullAccount(data) == false {
+				continue L
+			}
+		case data := <-watchers[SERVICETYPE_WEBAPPS].C:
+			if pullAccount(data) == false {
+				continue L
 			}
 		case <-pollBus.PollChan:
 			wg.Wait() // Finish all running Poll() calls before potentially polling the same accounts again
