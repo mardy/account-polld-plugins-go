@@ -175,7 +175,13 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 			notifs := batch.Messages
 			overflowing := len(notifs) > batch.Limit
 
-			for _, n := range notifs {
+			for i, n := range notifs {
+				// Play sound and vibrate on first notif only.
+				if i > 0 {
+					n.Notification.Vibrate = false
+					n.Notification.Sound = ""
+				}
+
 				// We're overflowing, so no popups.
 				// See LP: #1527171
 				if overflowing {
@@ -186,6 +192,7 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 			if overflowing {
 				n := batch.OverflowHandler(notifs)
 				n.Notification.Card.Persist = false
+				n.Notification.Vibrate = false
 				notifs = append(notifs, n)
 			}
 
