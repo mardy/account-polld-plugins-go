@@ -1,3 +1,11 @@
+account-polld (0.1+16.04.20160420-0ubuntu1) xenial; urgency=medium
+
+  [ jonas-drange ]
+  * Emit haptic and audible feedback only on the first notification in a
+    batch of notifications. (LP: #1570415)
+
+ -- Jonas G. Drange <ci-train-bot@canonical.com>  Wed, 20 Apr 2016 11:25:34 +0000
+
 account-polld (0.1+16.04.20160308.1-0ubuntu1) xenial; urgency=medium
 
   [ Niklas Wenzel ]
