@@ -192,10 +192,7 @@ func postOffice(bus *dbus.Connection, postWatch chan *PostWatch) {
 			if overflowing {
 				n := batch.OverflowHandler(notifs)
 				n.Notification.Card.Persist = false
-
-				// Suppress any non-visual feedback for overflow item.
 				n.Notification.Vibrate = false
-				n.Notification.Sound = ""
 				notifs = append(notifs, n)
 			}
 
