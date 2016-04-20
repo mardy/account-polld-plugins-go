@@ -42,7 +42,7 @@ const (
 	// If there's more than 10 emails in one batch, we don't show 10 notification
 	// bubbles, but instead show one summary. We always show all notifications in the
 	// indicator.
-	individualNotificationsLimit = 10
+	individualNotificationsLimit = 1
 	pluginName                   = "gmail"
 )
 
