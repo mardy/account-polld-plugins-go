@@ -1,3 +1,9 @@
+account-polld (0.1+16.04.20160421-0ubuntu1) xenial; urgency=medium
+
+  * Create gcalendar plugin.
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Thu, 21 Apr 2016 23:33:51 +0000
+
 account-polld (0.1+16.04.20160420-0ubuntu1) xenial; urgency=medium
 
   [ jonas-drange ]
