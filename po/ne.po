@@ -14,20 +14,20 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2016-03-23 06:07+0000\n"
-"X-Generator: Launchpad (build 17958)\n"
+"X-Launchpad-Export-Date: 2016-04-28 06:01+0000\n"
+"X-Generator: Launchpad (build 17995)\n"
 
 #. TRANSLATORS: the %s is an appended "from" corresponding to an specific email thread
 #: plugins/gmail/gmail.go:167
 #, c-format
 msgid ", %s"
-msgstr ""
+msgstr ", %s"
 
 #. TRANSLATORS: the %s is the "from" header corresponding to a specific email
 #: plugins/gmail/gmail.go:170
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #. TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 #: plugins/gmail/gmail.go:172
@@ -36,28 +36,30 @@ msgid ""
 "%s\n"
 "%s"
 msgstr ""
+"%s\n"
+"%s"
 
 #. TRANSLATORS: This represents a notification summary about more unread emails
 #: plugins/gmail/gmail.go:190
 msgid "More unread emails available"
-msgstr ""
+msgstr "थप नपढिएका चिठीहरु उपलब्ध छन्"
 
 #. TRANSLATORS: the first %d refers to approximate additional email message count
 #: plugins/gmail/gmail.go:194
 #, c-format
 msgid "You have about %d more unread messages"
-msgstr ""
+msgstr "तपाईसंग %d नपढिएका सन्देशहरु छन्"
 
 #. TRANSLATORS: The first %s refers to the twitter user's Name, the second %s to the username.
 #: plugins/twitter/twitter.go:112 plugins/twitter/twitter.go:172
 #, c-format
 msgid "%s. @%s"
-msgstr ""
+msgstr "%s. @%s"
 
 #. TRANSLATORS: This represents a notification summary about more twitter mentions available
 #: plugins/twitter/twitter.go:131
 msgid "Multiple more mentions"
-msgstr ""
+msgstr "धेरै अरु उल्लेखहरु"
 
 #. TRANSLATORS: This represents a notification body with the comma separated twitter usernames
 #. TRANSLATORS: This represents a message body with the comma separated facebook usernames
@@ -66,23 +68,23 @@ msgstr ""
 #: plugins/facebook/facebook.go:356 plugins/facebook/facebook.go:407
 #, c-format
 msgid "From %s"
-msgstr ""
+msgstr "%s बाट"
 
 #. TRANSLATORS: This represents a notification summary about more twitter direct messages available
 #: plugins/twitter/twitter.go:192
 msgid "Multiple direct messages available"
-msgstr ""
+msgstr "धेरै प्रत्यक्ष सन्देशहरु उपलब्ध छन्"
 
 #. TRANSLATORS: This represents a message summary about more facebook messages
 #: plugins/facebook/facebook.go:354
 msgid "Multiple more messages"
-msgstr ""
+msgstr "अरु धेरै सन्देशहरु"
 
 #. TRANSLATORS: This represents a notification summary about more facebook notifications
 #: plugins/facebook/facebook.go:405
 msgid "Multiple more notifications"
-msgstr ""
+msgstr "धेरै अरु अधिसूचनाहरु"
 
 #: data/account-polld.desktop.tr.h:1
 msgid "Notifications"
-msgstr ""
+msgstr "सूचनाहरू"
