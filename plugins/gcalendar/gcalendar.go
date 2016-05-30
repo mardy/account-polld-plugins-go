@@ -58,6 +58,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		return nil, nil
 	}
 
+	log.Print("Check calendar changes for account:", p.accountId)
 
 	calendars, err := syncMonitor.ListCalendarsByAccount(p.accountId)
 	if err != nil {
@@ -66,6 +67,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	}
 
 	var calendarsToSync []string
+	log.Print("Number of calendars for account:", p.accountId, " size:", len(calendars))
 
 	for _, calendar := range calendars {
 		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar", calendar)
