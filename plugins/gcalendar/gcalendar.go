@@ -52,13 +52,23 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		authData.AccessToken = token
 	}
 
+	log.Print("Check calendar changes for account:", p.accountId)
+
 	syncMonitor := NewSyncMonitor()
 	if syncMonitor == nil {
 		log.Print("Sync monitor not available yet.")
 		return nil, nil
 	}
 
-	log.Print("Check calendar changes for account:", p.accountId)
+	state, err := syncMonitor.State()
+	if err != nil {
+		log.Print("Fail to retrieve sync monitor state ", err)
+		return nil, nil
+	}
+	if state != "idle" {
+		log.Print("Sync monitor is not on 'idle' state, try later!")
+		return nil, nil
+	}
 
 	calendars, err := syncMonitor.ListCalendarsByAccount(p.accountId)
 	if err != nil {
@@ -70,7 +80,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	log.Print("Number of calendars for account:", p.accountId, " size:", len(calendars))
 
 	for _, calendar := range calendars {
-		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar", calendar)
+		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, calendar)
 		if err != nil {
 			log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err, ". Try next time.")
 			continue
