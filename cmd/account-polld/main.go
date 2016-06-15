@@ -27,6 +27,7 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/dekko"
 	"launchpad.net/account-polld/plugins/gcalendar"
 	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/twitter"
@@ -51,6 +52,7 @@ const (
 	SERVICETYPE_WEBAPPS  = "webapps"
 	SERVICETYPE_CALENDAR = "calendar"
 
+	SERVICENAME_DEKKO     = "dekko.dekkoproject_dekko"
 	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
@@ -133,6 +135,9 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 			var plugin plugins.Plugin
 			log.Println("Creat plugin for service: ", data.ServiceName)
 			switch data.ServiceName {
+			case SERVICENAME_DEKKO:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = dekko.New(data.AccountId)
 			case SERVICENAME_GMAIL:
 				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
 				plugin = gmail.New(data.AccountId)
