@@ -27,7 +27,7 @@ import (
 	"launchpad.net/ubuntu-push/click/cblacklist"
 )
 
-type AccountManager struct {
+type AccountService struct {
 	watcher          *accounts.Watcher
 	authData         accounts.AuthData
 	plugin           plugins.Plugin
@@ -54,8 +54,8 @@ var (
 
 var isBlacklisted = cblacklist.IsBlacklisted
 
-func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
-	return &AccountManager{
+func NewAccountService(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountService {
+	return &AccountService{
 		watcher:   watcher,
 		plugin:    plugin,
 		postWatch: postWatch,
@@ -64,14 +64,14 @@ func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plu
 	}
 }
 
-func (a *AccountManager) Delete() {
+func (a *AccountService) Delete() {
 	close(a.authChan)
 	close(a.doneChan)
 }
 
 // Poll() always needs to be called asynchronously as otherwise qtcontacs' GetAvatar()
 // will raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
-func (a *AccountManager) Poll(bootstrap bool) {
+func (a *AccountService) Poll(bootstrap bool) {
 	gotNewAuthData := false
 	if !a.authData.Enabled {
 		if a.authData, gotNewAuthData = <-a.authChan; !gotNewAuthData {
@@ -147,7 +147,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 	log.Printf("Ending poll for account %d", a.authData.AccountId)
 }
 
-func (a *AccountManager) poll() {
+func (a *AccountService) poll() {
 	log.Println("Polling account", a.authData.AccountId)
 	if !isClickInstalled(a.plugin.ApplicationId()) {
 		log.Println(
@@ -175,7 +175,7 @@ func (a *AccountManager) poll() {
 	}
 }
 
-func (a *AccountManager) updateAuthData(authData accounts.AuthData) {
+func (a *AccountService) updateAuthData(authData accounts.AuthData) {
 	a.authChan <- authData
 }
 

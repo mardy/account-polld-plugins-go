@@ -105,7 +105,7 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watchers[SERVICETYPE_WEBAPPS] = accounts.NewWatcher(SERVICETYPE_WEBAPPS)
 	watchers[SERVICETYPE_CALENDAR] = accounts.NewWatcher(SERVICETYPE_CALENDAR)
 
-	mgr := make(map[AccountKey]*AccountManager)
+	mgr := make(map[AccountKey]*AccountService)
 
 	var wg sync.WaitGroup
 
@@ -147,7 +147,7 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				return false
 			}
-			mgr[accountKey] = NewAccountManager(watchers[data.ServiceType], postWatch, plugin)
+			mgr[accountKey] = NewAccountService(watchers[data.ServiceType], postWatch, plugin)
 			mgr[accountKey].updateAuthData(data)
 			wg.Add(1)
 			go func() {
@@ -178,9 +178,9 @@ L:
 			for _, v := range mgr {
 				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token hasn't been loaded yet
 					wg.Add(1)
-					go func(accountManager *AccountManager) {
+					go func(accountService *AccountService) {
 						defer wg.Done()
-						accountManager.Poll(false)
+						accountService.Poll(false)
 					}(v)
 				} else {
 					log.Println("Skipping account with id", v.authData.AccountId, "as it is refreshing its token")
