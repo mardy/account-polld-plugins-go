@@ -55,10 +55,10 @@ func clean(p *SyncMonitor) {
 	}
 }
 
-func (p *SyncMonitor) ListCalendarsByAccount(accountId uint) (calendars []string, err error) {
+func (p *SyncMonitor) ListCalendarsByAccount(accountId uint) (calendars map[string]string, err error) {
 	message, err := p.obj.Call(busInterface, "listCalendarsByAccount", uint32(accountId))
 	if err != nil {
-		var calendars []string
+		var calendars map[string]string
 		return calendars, err
 	} else {
 		err = message.Args(&calendars)
