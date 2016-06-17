@@ -73,12 +73,6 @@ func (a *AccountService) Delete() {
 // will raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
 func (a *AccountService) Poll(bootstrap bool) {
 	gotNewAuthData := false
-	if !a.authData.Enabled {
-		if a.authData, gotNewAuthData = <-a.authChan; !gotNewAuthData {
-			log.Println("Account", a.authData.AccountId, "no longer enabled")
-			return
-		}
-	}
 
 	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
 		log.Printf("Account %d is blacklisted, not polling", a.authData.AccountId)
@@ -134,7 +128,7 @@ func (a *AccountService) Poll(bootstrap bool) {
 					// and mark the data as disabled.
 					// Do not refresh immediately when we just got new (faulty) auth data as immediately trying
 					// again is probably not going to help. Instead, we wait for the next poll cycle.
-					a.watcher.Refresh(a.authData.AccountId)
+					a.watcher.Refresh(a.authData.AccountId, a.authData.ServiceName)
 					a.authData.Enabled = false
 					a.authData.Error = err
 				}

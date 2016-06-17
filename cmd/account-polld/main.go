@@ -101,9 +101,7 @@ func main() {
 }
 
 func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
-	watchers := make(map[string]*accounts.Watcher)
-	watchers[SERVICETYPE_WEBAPPS] = accounts.NewWatcher(SERVICETYPE_WEBAPPS)
-	watchers[SERVICETYPE_CALENDAR] = accounts.NewWatcher(SERVICETYPE_CALENDAR)
+	watcher := accounts.NewWatcher()
 
 	mgr := make(map[AccountKey]*AccountService)
 
@@ -147,7 +145,7 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				return false
 			}
-			mgr[accountKey] = NewAccountService(watchers[data.ServiceType], postWatch, plugin)
+			mgr[accountKey] = NewAccountService(watcher, postWatch, plugin)
 			mgr[accountKey].updateAuthData(data)
 			wg.Add(1)
 			go func() {
@@ -165,11 +163,7 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 L:
 	for {
 		select {
-		case data := <-watchers[SERVICETYPE_CALENDAR].C:
-			if pullAccount(data) == false {
-				continue L
-			}
-		case data := <-watchers[SERVICETYPE_WEBAPPS].C:
+		case data := <-watcher.C:
 			if pullAccount(data) == false {
 				continue L
 			}
