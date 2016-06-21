@@ -100,7 +100,8 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 
 		if len(messages) > 0 {
 			// Update last sync date
-			calendarsToSync = append(calendarsToSync, calendar)
+			log.Print("Calendar changed: ", calendar)
+			calendarsToSync = append(calendarsToSync, id)
 		} else {
 			log.Print("Found no calendar updates for account: ", p.accountId, " calendar: ", calendar)
 		}
