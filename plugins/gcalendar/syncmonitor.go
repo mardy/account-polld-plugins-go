@@ -77,8 +77,8 @@ func (p *SyncMonitor) LastSyncDate(accountId uint, source string) (lastSyncDate 
 	}
 }
 
-func (p *SyncMonitor) SyncAccount(accountId uint, serviceName string, sources []string) (err error) {
-	_, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), serviceName, sources)
+func (p *SyncMonitor) SyncAccount(accountId uint, sources []string) (err error) {
+	_, err = p.obj.Call(busInterface, "syncAccount", uint32(accountId), sources)
 	return err
 }
 

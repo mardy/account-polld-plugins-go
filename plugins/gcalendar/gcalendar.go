@@ -108,7 +108,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 
 	if len(calendarsToSync) > 0 {
 		log.Print("Request calendar sync")
-		err = syncMonitor.SyncAccount(p.accountId, "calendar", calendarsToSync)
+		err = syncMonitor.SyncAccount(p.accountId, calendarsToSync)
 		if err != nil {
 			log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
 		}
