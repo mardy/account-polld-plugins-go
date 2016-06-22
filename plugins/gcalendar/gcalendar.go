@@ -88,19 +88,24 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 			log.Print("calendar plugin ", p.accountId, ": last sync date: ", lastSyncDate)
 		}
 
-		resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
-		if err != nil {
-			continue
+		var needSync bool
+		needSync = (len(lastSyncDate) == 0)
+
+		if !needSync {
+			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
+			if err != nil {
+				continue
+			}
+
+			messages, err := p.parseChangesResponse(resp)
+			if err != nil {
+				continue
+			}
+			needSync = (len(messages) > 0)
 		}
 
-		messages, err := p.parseChangesResponse(resp)
-		if err != nil {
-			continue
-		}
-
-		if len(messages) > 0 {
-			// Update last sync date
-			log.Print("Calendar changed: ", calendar)
+		if needSync {
+			log.Print("Calendar needs sync: ", calendar)
 			calendarsToSync = append(calendarsToSync, id)
 		} else {
 			log.Print("Found no calendar updates for account: ", p.accountId, " calendar: ", calendar)
