@@ -80,12 +80,12 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	log.Print("Number of calendars for account:", p.accountId, " size:", len(calendars))
 
 	for id, calendar := range calendars {
-		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, calendar)
+		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, id)
 		if err != nil {
-			log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err, ". Try next time.")
+			log.Print("calendar: ", calendar, ": cannot load previous sync date: ", err, ". Try next time.")
 			continue
 		} else {
-			log.Print("calendar plugin ", p.accountId, ": last sync date: ", lastSyncDate)
+			log.Print("calendar: ", calendar, ": last sync date: ", lastSyncDate)
 		}
 
 		var needSync bool

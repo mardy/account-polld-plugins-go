@@ -66,8 +66,8 @@ func (p *SyncMonitor) ListCalendarsByAccount(accountId uint) (calendars map[stri
 	}
 }
 
-func (p *SyncMonitor) LastSyncDate(accountId uint, source string) (lastSyncDate string, err error) {
-	message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), source)
+func (p *SyncMonitor) LastSyncDate(accountId uint, sourceId string) (lastSyncDate string, err error) {
+	message, err := p.obj.Call(busInterface, "lastSuccessfulSyncDate", uint32(accountId), sourceId)
 	if err != nil {
 		return "", err
 	} else {
