@@ -68,6 +68,12 @@ func NewWatcher() *Watcher {
 	return w
 }
 
+// Walk through the enable accounts, and get auth tokens for each of them.
+// The new access token will be delivered over the watcher's channel.
+func (w *Watcher) Run() {
+	C.account_watcher_run(w.watcher)
+}
+
 // Refresh requests that the token for the given account be refreshed.
 // The new access token will be delivered over the watcher's channel.
 func (w *Watcher) Refresh(accountId uint, serviceName string) {

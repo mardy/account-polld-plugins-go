@@ -169,6 +169,7 @@ L:
 			}
 		case <-pollBus.PollChan:
 			wg.Wait() // Finish all running Poll() calls before potentially polling the same accounts again
+            watcher.Run()
 			for _, v := range mgr {
 				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token hasn't been loaded yet
 					wg.Add(1)
