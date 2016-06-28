@@ -49,6 +49,7 @@ func (p *GCalendarPlugin) ApplicationId() plugins.ApplicationId {
 func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GCALENDAR"); token != "" {
+		log.Print("Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
 		authData.AccessToken = token
 	}
 
@@ -129,7 +130,10 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
+	log.Print("Response: ", resp)
+
 	if resp.StatusCode != http.StatusOK {
+		log.Print("Invalid response")
 		var errResp errorResp
 		if err := decoder.Decode(&errResp); err != nil {
 			return nil, err
@@ -142,6 +146,7 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 
 	var events eventList
 	if err := decoder.Decode(&events); err != nil {
+		log.Print("Fail to decode")
 		return nil, err
 	}
 
