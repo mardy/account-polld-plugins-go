@@ -32,7 +32,7 @@ const (
 	pluginName = "gcalendar"
 )
 
-var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
+var baseUrl,_ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
 
 type GCalendarPlugin struct {
 	accountId uint
@@ -86,7 +86,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 			log.Print("calendar: ", calendar, ": cannot load previous sync date: ", err, ". Try next time.")
 			continue
 		} else {
-			log.Print("calendar: ", calendar, ": last sync date: ", lastSyncDate)
+			log.Print("calendar: ", calendar, " Id: ", id, ": last sync date: ", lastSyncDate)
 		}
 
 		var needSync bool
@@ -130,8 +130,6 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
-	log.Print("Response: ", resp)
-
 	if resp.StatusCode != http.StatusOK {
 		log.Print("Invalid response")
 		var errResp errorResp
@@ -158,13 +156,14 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 }
 
 func (p *GCalendarPlugin) requestChanges(accessToken string, calendar string, lastSyncDate string) (*http.Response, error) {
-	u, err := baseUrl.Parse(calendar + "/events")
+	u, err := baseUrl.Parse("")
 	if err != nil {
 		return nil, err
 	}
+	u.Path += calendar + "/events"
 
 	//GET https://www.googleapis.com/calendar/v3/calendars/<calendar>/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
-	query := baseUrl.Query()
+	query := u.Query()
 	query.Add("showDeleted", "true")
 	query.Add("singleEvents", "true")
 	query.Add("fields", "description,items(summary,etag)")
