@@ -73,6 +73,13 @@ func (a *AccountService) Delete() {
 // will raise an error: "QSocketNotifier: Can only be used with threads started with QThread"
 func (a *AccountService) Poll(bootstrap bool) {
 	gotNewAuthData := false
+	if !a.authData.Enabled {
+		if a.authData, gotNewAuthData = <-a.authChan; !gotNewAuthData {
+			log.Println("Account", a.authData.AccountId, "no longer enabled")
+			return
+		}
+	}
+
 
 	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
 		log.Printf("Account %d is blacklisted, not polling", a.authData.AccountId)
