@@ -197,7 +197,9 @@ static gboolean account_watcher_setup(void *user_data) {
 
         AccountInfo *info = g_hash_table_lookup(watcher->services, key);
         if (info) {
-            old_services = g_list_remove(old_services, key);
+            GList *node = g_list_find_custom(old_services, key,
+                                             (GCompareFunc)g_strcmp0);
+            old_services = g_list_remove_link(old_services, node);
             g_free(key);
         } else {
             trace("adding account %s\n", key);
@@ -211,6 +213,7 @@ static gboolean account_watcher_setup(void *user_data) {
     /* Remove from the table the accounts which are no longer enabled */
     for (l = old_services; l != NULL; l = l->next) {
         char *key = l->data;
+        trace("removing account %s\n", key);
         g_hash_table_remove(watcher->services, key);
     }
     g_list_free(old_services);
