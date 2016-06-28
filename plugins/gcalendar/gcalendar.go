@@ -94,11 +94,13 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		if !needSync {
 			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
 			if err != nil {
+				log.Print("Error: Fail to query for changes: ", err)
 				continue
 			}
 
 			messages, err := p.parseChangesResponse(resp)
 			if err != nil {
+				log.Print("Error: Fail to parse changes: ", err)
 				continue
 			}
 			needSync = (len(messages) > 0)
