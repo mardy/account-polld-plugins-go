@@ -73,7 +73,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 
 	calendars, err := syncMonitor.ListCalendarsByAccount(p.accountId)
 	if err != nil {
-		log.Print("calendar plugin ", p.accountId, ": cannot load calendars: ", err)
+		log.Print("Calendar plugin ", p.accountId, ": cannot load calendars: ", err)
 		return nil, nil
 	}
 
@@ -83,10 +83,10 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	for id, calendar := range calendars {
 		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, id)
 		if err != nil {
-			log.Print("calendar: ", calendar, ": cannot load previous sync date: ", err, ". Try next time.")
+			log.Print("\tcalendar: ", calendar, ", cannot load previous sync date: ", err, ". Try next time.")
 			continue
 		} else {
-			log.Print("calendar: ", calendar, " Id: ", id, ": last sync date: ", lastSyncDate)
+			log.Print("\tcalendar: ", calendar, " Id: ", id, ": last sync date: ", lastSyncDate)
 		}
 
 		var needSync bool
@@ -95,31 +95,36 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		if !needSync {
 			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
 			if err != nil {
-				log.Print("Error: Fail to query for changes: ", err)
+				log.Print("\tERROR: Fail to query for changes: ", err)
 				continue
 			}
 
 			messages, err := p.parseChangesResponse(resp)
 			if err != nil {
-				log.Print("Error: Fail to parse changes: ", err)
-				continue
+				log.Print("\tERROR: Fail to parse changes: ", err)
+				if err == plugins.ErrTokenExpired {
+					log.Print("\t\tAbort poll")
+					return nil, err
+				} else {
+					continue
+				}
 			}
 			needSync = (len(messages) > 0)
 		}
 
 		if needSync {
-			log.Print("Calendar needs sync: ", calendar)
+			log.Print("\tCalendar needs sync: ", calendar)
 			calendarsToSync = append(calendarsToSync, id)
 		} else {
-			log.Print("Found no calendar updates for account: ", p.accountId, " calendar: ", calendar)
+			log.Print("\tFound no calendar updates for account: ", p.accountId, " calendar: ", calendar)
 		}
 	}
 
 	if len(calendarsToSync) > 0 {
-		log.Print("Request calendar sync")
+		log.Print("Request account sync")
 		err = syncMonitor.SyncAccount(p.accountId, calendarsToSync)
 		if err != nil {
-			log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
+			log.Print("ERROR: Fail to start account sync ", p.accountId, " message: ", err)
 		}
 	}
 
@@ -131,8 +136,8 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 	decoder := json.NewDecoder(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		log.Print("Invalid response")
 		var errResp errorResp
+		log.Print("Invalid response:", errResp.Err.Code)
 		if err := decoder.Decode(&errResp); err != nil {
 			return nil, err
 		}
