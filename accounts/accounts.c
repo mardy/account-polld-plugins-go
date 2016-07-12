@@ -16,6 +16,7 @@ AccountWatcher *watch_for_service_type(const char *service_type) {
                        GError *error, int enabled,
                        char *client_id, char *client_secret,
                        char *access_token, char *token_secret,
+                       char *user_name, char *secret, 
                        void *user_data) = authCallback;
     }
 

@@ -27,6 +27,7 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/plugins/caldav"
 	"launchpad.net/account-polld/plugins/gcalendar"
 	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/plugins/twitter"
@@ -54,6 +55,7 @@ const (
 	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
+	SERVICENAME_OCALENDAR = "owncloud-caldav"
 )
 
 const (
@@ -143,6 +145,9 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 				// This is just stubbed until the plugin exists.
 				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
 				plugin = twitter.New()
+			case SERVICENAME_OCALENDAR:
+				log.Println("Creating account with id", data.AccountId, "for", data.ServiceName)
+				plugin = caldav.New(data.AccountId)
 			default:
 				log.Println("Unhandled account with id", data.AccountId, "for", data.ServiceName)
 				return false

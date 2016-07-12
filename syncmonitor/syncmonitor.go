@@ -14,7 +14,7 @@
  with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package gcalendar
+package syncmonitor
 
 import (
 	"log"

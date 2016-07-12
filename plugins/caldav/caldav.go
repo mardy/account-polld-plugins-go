@@ -14,43 +14,45 @@
  with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package gcalendar
+package caldav
 
 import (
-	"encoding/json"
+    "fmt"
+    "bytes"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+    "io/ioutil"
+    "strings"
+    "time"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
-  	"launchpad.net/account-polld/syncmonitor"
+    "launchpad.net/account-polld/syncmonitor"
 )
 
 const (
 	APP_ID     = "com.ubuntu.calendar_calendar"
-	pluginName = "gcalendar"
+	pluginName = "caldav"
 )
 
-var baseUrl,_ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
-
-type GCalendarPlugin struct {
+type CalDavPlugin struct {
 	accountId uint
 }
 
-func New(accountId uint) *GCalendarPlugin {
-	return &GCalendarPlugin{accountId: accountId}
+func New(accountId uint) *CalDavPlugin {
+	return &CalDavPlugin{accountId: accountId}
 }
 
-func (p *GCalendarPlugin) ApplicationId() plugins.ApplicationId {
+func (p *CalDavPlugin) ApplicationId() plugins.ApplicationId {
 	return plugins.ApplicationId(APP_ID)
 }
 
-func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
+func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
-	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GCALENDAR"); token != "" {
-		log.Print("Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
+	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_CALDAV"); token != "" {
+		log.Print("Using token from: ACCOUNT_POLLD_TOKEN_CALDAV env var")
 		authData.AccessToken = token
 	}
 
@@ -94,13 +96,13 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		needSync = (len(lastSyncDate) == 0)
 
 		if !needSync {
-			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
+			resp, err := p.requestChanges(authData, id, lastSyncDate)
 			if err != nil {
 				log.Print("\tERROR: Fail to query for changes: ", err)
 				continue
 			}
 
-			messages, err := p.parseChangesResponse(resp)
+			needSync, err = p.containEvents(resp)
 			if err != nil {
 				log.Print("\tERROR: Fail to parse changes: ", err)
 				if err == plugins.ErrTokenExpired {
@@ -110,7 +112,6 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 					continue
 				}
 			}
-			needSync = (len(messages) > 0)
 		}
 
 		if needSync {
@@ -132,59 +133,66 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 	return nil, nil
 }
 
-func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, error) {
+func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
 	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
+    log.Print("RESPONSE CODE ----:", resp.StatusCode)
+    
+	if resp.StatusCode != 207 {
 		var errResp errorResp
 		log.Print("Invalid response:", errResp.Err.Code)
-		if err := decoder.Decode(&errResp); err != nil {
-			return nil, err
-		}
-		if errResp.Err.Code == 401 {
-			return nil, plugins.ErrTokenExpired
-		}
-		return nil, nil
-	}
+		return false, nil
+	} else {
+        data, err:= ioutil.ReadAll(resp.Body)
+        if err != nil {
+            return false, err
+        }
+        fmt.Printf("DATA: %s", data)
+        return strings.Contains(string(data), "BEGIN:VEVENT"), nil
+    }
 
-	var events eventList
-	if err := decoder.Decode(&events); err != nil {
-		log.Print("Fail to decode")
-		return nil, err
-	}
-
-	for _, ev := range events.Events {
-		log.Print("Found event: ", ev.Etag, ev.Summary)
-	}
-
-	return events.Events, nil
+    return false, nil
 }
 
-func (p *GCalendarPlugin) requestChanges(accessToken string, calendar string, lastSyncDate string) (*http.Response, error) {
-	u, err := baseUrl.Parse("")
+func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
+	u, err := url.Parse("https://my.owndrive.com:443")
 	if err != nil {
 		return nil, err
 	}
-	u.Path += calendar + "/events"
+    startDate, err := time.Parse(time.RFC3339, lastSyncDate)
+    if err != nil {
+        log.Print("Fail to parse date: ", lastSyncDate)
+        return nil, err
+    }
 
-	//GET https://www.googleapis.com/calendar/v3/calendars/<calendar>/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
-	query := u.Query()
-	query.Add("showDeleted", "true")
-	query.Add("singleEvents", "true")
-	query.Add("fields", "description,items(summary,etag)")
-	query.Add("maxResults", "1")
-	if len(lastSyncDate) > 0 {
-		query.Add("updatedMin", lastSyncDate)
-	}
-	u.RawQuery = query.Encode()
+    endDate := startDate.AddDate(0, 0, 1)
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
+
+	//GET https://my.owndrive.com:443/remote.php/caldav/calendars/renatox%40gmail.com/teste/
+    query := "<c:calendar-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\">\n"
+    query += "<d:prop>\n"
+    query +=    "<d:getetag />\n"
+    query +=    "<c:calendar-data />\n"
+    query += "</d:prop>\n"
+    query += "<c:filter>\n"
+    query +=    "<c:comp-filter name=\"VCALENDAR\">\n"
+    query +=    "<c:comp-filter name=\"VEVENT\">\n"
+    query +=    "<c:prop-filter name=\"LAST-MODIFIED\">\n"
+    query +=        "<c:time-range start=\"" + startDate.Format("20060102T150405Z") + "\" end=\"" + endDate.Format("20060102T150405Z") + "\"/>\n"
+    query +=    "</c:prop-filter>\n"
+    query +=    "</c:comp-filter>\n"
+    query +=    "</c:comp-filter>\n"
+    query += "</c:filter>\n"
+    query += "</c:calendar-query>\n"
+    log.Print("Query: ", query)
+	req, err := http.NewRequest("REPORT", u.String(), bytes.NewBufferString(query))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	log.Print("\trequest url: ", u.String())
+    req.Header.Set("Depth", "1");
+    req.Header.Set("Prefer", "return-minimal");
+    req.Header.Set("Content-Type", "application/xml; charset=utf-8");
+    req.SetBasicAuth(authData.UserName, authData.Secret)
 
 	return http.DefaultClient.Do(req)
 }

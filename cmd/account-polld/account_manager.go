@@ -149,6 +149,7 @@ func (a *AccountManager) Poll(bootstrap bool) {
 
 func (a *AccountManager) poll() {
 	log.Println("Polling account", a.authData.AccountId)
+    /*
 	if !isClickInstalled(a.plugin.ApplicationId()) {
 		log.Println(
 			"Skipping account", a.authData.AccountId, "as target click",
@@ -156,6 +157,7 @@ func (a *AccountManager) poll() {
 		a.doneChan <- clickNotInstalledError
 		return
 	}
+    */
 
 	if a.authData.Error != nil {
 		log.Println("Account", a.authData.AccountId, "failed to authenticate:", a.authData.Error)

@@ -94,6 +94,8 @@ static void account_info_notify(AccountInfo *info, GError *error) {
     char *client_secret = NULL;
     char *access_token = NULL;
     char *token_secret = NULL;
+    char *secret = NULL;
+    char *user_name = NULL;
 
     if (info->auth_params != NULL) {
         /* Look up OAuth 2 parameters, falling back to OAuth 1 names */
@@ -109,6 +111,8 @@ static void account_info_notify(AccountInfo *info, GError *error) {
     if (info->session_data != NULL) {
         g_variant_lookup(info->session_data, "AccessToken", "&s", &access_token);
         g_variant_lookup(info->session_data, "TokenSecret", "&s", &token_secret);
+        g_variant_lookup(info->session_data, "Secret", "&s", &secret);
+        g_variant_lookup(info->session_data, "UserName", "&s", &user_name);
     }
 
     info->watcher->callback(info->watcher,
@@ -121,6 +125,8 @@ static void account_info_notify(AccountInfo *info, GError *error) {
                             client_secret,
                             access_token,
                             token_secret,
+                            user_name,
+                            secret,
                             info->watcher->user_data);
 }
 
