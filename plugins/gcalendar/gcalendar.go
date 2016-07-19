@@ -32,7 +32,7 @@ const (
 	pluginName = "gcalendar"
 )
 
-var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/primary/")
+var baseUrl,_ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
 
 type GCalendarPlugin struct {
 	accountId uint
@@ -49,42 +49,83 @@ func (p *GCalendarPlugin) ApplicationId() plugins.ApplicationId {
 func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GCALENDAR"); token != "" {
+		log.Print("calendar: Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
 		authData.AccessToken = token
 	}
 
+	log.Print("calendar: Check calendar changes for account:", p.accountId)
+
 	syncMonitor := NewSyncMonitor()
 	if syncMonitor == nil {
-		log.Print("Sync monitor not available yet.")
+		log.Print("calendar: Sync monitor not available yet.")
 		return nil, nil
 	}
 
-	lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, "calendar")
+	state, err := syncMonitor.State()
 	if err != nil {
-		log.Print("calendar plugin ", p.accountId, ": cannot load previous sync date: ", err, ". Try next time.")
+		log.Print("calendar: Fail to retrieve sync monitor state ", err)
 		return nil, nil
-	} else {
-		log.Print("calendar plugin ", p.accountId, ": last sync date: ", lastSyncDate)
+	}
+	if state != "idle" {
+		log.Print("calendar: Sync monitor is not on 'idle' state, try later!")
+		return nil, nil
 	}
 
-	resp, err := p.requestChanges(authData.AccessToken, lastSyncDate)
+	calendars, err := syncMonitor.ListCalendarsByAccount(p.accountId)
 	if err != nil {
-		return nil, err
+		log.Print("calendar: Calendar plugin ", p.accountId, ": cannot load calendars: ", err)
+		return nil, nil
 	}
 
-	messages, err := p.parseChangesResponse(resp)
-	if err != nil {
-		return nil, err
-	}
+	var calendarsToSync []string
+	log.Print("calendar: Number of calendars for account:", p.accountId, " size:", len(calendars))
 
-	if len(messages) > 0 {
-		// Update last sync date
-		log.Print("Request calendar sync")
-		err = syncMonitor.SyncAccount(p.accountId, "calendar")
+	for id, calendar := range calendars {
+		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, id)
 		if err != nil {
-			log.Print("Fail to start calendar sync ", p.accountId, " error: ", err)
+			log.Print("\tcalendar: ", calendar, ", cannot load previous sync date: ", err, ". Try next time.")
+			continue
+		} else {
+			log.Print("\tcalendar: ", calendar, " Id: ", id, ": last sync date: ", lastSyncDate)
 		}
-	} else {
-		log.Print("Found no calendar updates for account: ", p.accountId)
+
+		var needSync bool
+		needSync = (len(lastSyncDate) == 0)
+
+		if !needSync {
+			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
+			if err != nil {
+				log.Print("\tcalendar: ERROR: Fail to query for changes: ", err)
+				continue
+			}
+
+			messages, err := p.parseChangesResponse(resp)
+			if err != nil {
+				log.Print("\tcalendar: ERROR: Fail to parse changes: ", err)
+				if err == plugins.ErrTokenExpired {
+					log.Print("\t\tcalendar: Abort poll")
+					return nil, err
+				} else {
+					continue
+				}
+			}
+			needSync = (len(messages) > 0)
+		}
+
+		if needSync {
+			log.Print("\tcalendar: Calendar needs sync: ", calendar)
+			calendarsToSync = append(calendarsToSync, id)
+		} else {
+			log.Print("\tcalendar: Found no calendar updates for account: ", p.accountId, " calendar: ", calendar)
+		}
+	}
+
+	if len(calendarsToSync) > 0 {
+		log.Print("calendar: Request account sync")
+		err = syncMonitor.SyncAccount(p.accountId, calendarsToSync)
+		if err != nil {
+			log.Print("calendar: ERROR: Fail to start account sync ", p.accountId, " message: ", err)
+		}
 	}
 
 	return nil, nil
@@ -96,6 +137,7 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 
 	if resp.StatusCode != http.StatusOK {
 		var errResp errorResp
+		log.Print("calendar: Invalid response:", errResp.Err.Code)
 		if err := decoder.Decode(&errResp); err != nil {
 			return nil, err
 		}
@@ -107,24 +149,26 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 
 	var events eventList
 	if err := decoder.Decode(&events); err != nil {
+		log.Print("calendar: Fail to decode")
 		return nil, err
 	}
 
 	for _, ev := range events.Events {
-		log.Print("Found event: ", ev.Etag, ev.Summary)
+		log.Print("calendar: Found event: ", ev.Etag, ev.Summary)
 	}
 
 	return events.Events, nil
 }
 
-func (p *GCalendarPlugin) requestChanges(accessToken string, lastSyncDate string) (*http.Response, error) {
-	u, err := baseUrl.Parse("events")
+func (p *GCalendarPlugin) requestChanges(accessToken string, calendar string, lastSyncDate string) (*http.Response, error) {
+	u, err := baseUrl.Parse("")
 	if err != nil {
 		return nil, err
 	}
+	u.Path += calendar + "/events"
 
-	//GET https://www.googleapis.com/calendar/v3/calendars/primary/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
-	query := baseUrl.Query()
+	//GET https://www.googleapis.com/calendar/v3/calendars/<calendar>/events?showDeleted=true&singleEvents=true&updatedMin=2016-04-06T10%3A00%3A00.00Z&fields=description%2Citems(description%2Cetag%2Csummary)&key={YOUR_API_KEY}
+	query := u.Query()
 	query.Add("showDeleted", "true")
 	query.Add("singleEvents", "true")
 	query.Add("fields", "description,items(summary,etag)")
