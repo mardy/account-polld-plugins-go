@@ -1,9 +1,45 @@
+account-polld (0.1+16.10.20160720.1-0ubuntu0) vivid; urgency=medium
+
+  * Rebuild
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Wed, 20 Jul 2016 10:17:12 +0300
+
 account-polld (0.1+16.10.20160706.1-0ubuntu1) yakkety; urgency=medium
 
   [ Arthur Mello ]
   * Still run the plugins even when notifications are disabled
 
  -- Arthur Renato Mello <arthur.mello@canonical.com>  Wed, 06 Jul 2016 14:39:39 +0000
+
+account-polld (0.1+16.04.20160627-0ubuntu5) vivid; urgency=medium
+
+  * More logging
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Tue, 19 Jul 2016 14:12:34 +0300
+
+account-polld (0.1+16.04.20160627-0ubuntu4) vivid; urgency=medium
+
+  * AuthData setup
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Tue, 28 Jun 2016 16:46:02 +0200
+
+account-polld (0.1+16.04.20160627-0ubuntu3) vivid; urgency=medium
+
+  * fix list lookup
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Tue, 28 Jun 2016 16:24:10 +0200
+
+account-polld (0.1+16.04.20160627-0ubuntu2) vivid; urgency=medium
+
+  * Enable debug
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Mon, 27 Jun 2016 17:01:26 +0200
+
+account-polld (0.1+16.04.20160627-0ubuntu1) vivid; urgency=medium
+
+  * Don't monitor
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Mon, 27 Jun 2016 12:20:40 +0200
 
 account-polld (0.1+16.04.20160430-0ubuntu1) xenial; urgency=medium
 

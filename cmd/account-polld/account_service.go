@@ -77,15 +77,6 @@ func (a *AccountService) Poll(bootstrap bool) {
 		}
 	}
 
-<<<<<<< TREE
-
-	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
-		log.Printf("Account %d is blacklisted, not polling", a.authData.AccountId)
-		return
-	}
-
-=======
->>>>>>> MERGE-SOURCE
 	if a.penaltyCount > 0 {
 		log.Printf("Leaving poll for account %d as penalty count is %d", a.authData.AccountId, a.penaltyCount)
 		a.penaltyCount--
