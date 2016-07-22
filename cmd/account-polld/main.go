@@ -41,7 +41,7 @@ type PostWatch struct {
 }
 
 type AccountKey struct {
-	serviceType string
+	serviceId   string
 	accountId   uint
 }
 
@@ -105,7 +105,7 @@ func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	var wg sync.WaitGroup
 
 	pullAccount := func(data accounts.AuthData) bool {
-		accountKey := AccountKey{data.ServiceType, data.AccountId}
+		accountKey := AccountKey{data.ServiceName, data.AccountId}
 		if account, ok := mgr[accountKey]; ok {
 			if data.Enabled {
 				log.Println("New account data for existing account with id", data.AccountId)
