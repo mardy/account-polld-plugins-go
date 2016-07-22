@@ -21,7 +21,7 @@
 
 #include "account-watcher.h"
 
-#define DEBUG
+/* #define DEBUG */
 #ifdef DEBUG
 #  define trace(...) fprintf(stderr, __VA_ARGS__)
 #else

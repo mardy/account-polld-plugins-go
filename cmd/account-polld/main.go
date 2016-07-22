@@ -164,30 +164,13 @@ L:
 	for {
 		select {
 		case data := <-watcher.C:
-			log.Println("New data in watcher")
 			if pullAccount(data) == false {
 				log.Println("pullAccount returned false, continuing")
 				continue L
 			}
-			log.Println("handled data in watcher")
 		case <-pollBus.PollChan:
-			log.Println("Waiting for previous op")
 			wg.Wait() // Finish all running Poll() calls before potentially polling the same accounts again
-			log.Println("Previous op has completed")
 			watcher.Run()
-			/*
-			for _, v := range mgr {
-				if v.authData.Error != plugins.ErrTokenExpired { // Do not poll if the new token hasn't been loaded yet
-					wg.Add(1)
-					go func(accountService *AccountService) {
-						defer wg.Done()
-						accountService.Poll(false)
-					}(v)
-				} else {
-					log.Println("Skipping account with id", v.authData.AccountId, "as it is refreshing its token")
-				}
-			}
-			*/
 			wg.Wait()
 			pollBus.SignalDone()
 		}
