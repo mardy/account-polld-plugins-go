@@ -34,6 +34,8 @@ typedef void (*AccountEnabledCallback)(AccountWatcher *watcher,
 
 AccountWatcher *account_watcher_new(AccountEnabledCallback callback,
                                     void *user_data);
+void account_watcher_add_service(AccountWatcher *watcher,
+                                 char *serviceId);
 void account_watcher_run(AccountWatcher *watcher);
 
 void account_watcher_refresh(AccountWatcher *watcher,

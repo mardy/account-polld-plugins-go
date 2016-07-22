@@ -99,6 +99,9 @@ func main() {
 
 func monitorAccounts(postWatch chan *PostWatch, pollBus *pollbus.PollBus) {
 	watcher := accounts.NewWatcher()
+	watcher.AddService(SERVICENAME_GMAIL)
+	watcher.AddService(SERVICENAME_GCALENDAR)
+	watcher.AddService(SERVICENAME_TWITTER)
 
 	mgr := make(map[AccountKey]*AccountService)
 

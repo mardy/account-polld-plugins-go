@@ -35,6 +35,9 @@ struct _AccountWatcher {
      */
     GHashTable *services;
 
+    /* List of supported services' IDs */
+    GSList *supported_services;
+
     AccountEnabledCallback callback;
     void *user_data;
 };
@@ -179,6 +182,15 @@ static AccountInfo *account_info_new(AccountWatcher *watcher, AgAccountService *
     return info;
 }
 
+static gboolean service_is_supported(AccountWatcher *watcher,
+                                     const char *service_id)
+{
+    GSList *node = g_slist_find_custom(watcher->supported_services,
+                                       service_id,
+                                       (GCompareFunc)g_strcmp0);
+    return node != NULL;
+}
+
 static gboolean account_watcher_setup(void *user_data) {
     AccountWatcher *watcher = (AccountWatcher *)user_data;
 
@@ -193,7 +205,11 @@ static gboolean account_watcher_setup(void *user_data) {
         AgAccountService *account_service = l->data;
         AgAccountId id = ag_account_service_get_account(account_service)->id;
         AgService *service = ag_account_service_get_service(account_service);
-        char *key = g_strdup_printf("%d/%s", id, ag_service_get_name(service));
+        const char *service_id = ag_service_get_name(service);
+
+        if (!service_is_supported(watcher, service_id)) continue;
+
+        char *key = g_strdup_printf("%d/%s", id, service_id);
 
         AccountInfo *info = g_hash_table_lookup(watcher->services, key);
         if (info) {
@@ -228,10 +244,17 @@ AccountWatcher *account_watcher_new(AccountEnabledCallback callback,
     watcher->manager = ag_manager_new();
     watcher->services = g_hash_table_new_full(
         g_str_hash, g_str_equal, g_free, (GDestroyNotify)account_info_free);
+    watcher->supported_services = NULL;
     watcher->callback = callback;
     watcher->user_data = user_data;
 
     return watcher;
+}
+
+void account_watcher_add_service(AccountWatcher *watcher,
+                                 char *serviceId) {
+    watcher->supported_services =
+        g_slist_prepend(watcher->supported_services, serviceId);
 }
 
 void account_watcher_run(AccountWatcher *watcher) {
