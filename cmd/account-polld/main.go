@@ -48,9 +48,6 @@ type AccountKey struct {
 /* Use identifiers and API keys provided by the respective webapps which are the official
    end points for the notifications */
 const (
-	SERVICETYPE_WEBAPPS  = "webapps"
-	SERVICETYPE_CALENDAR = "calendar"
-
 	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
 	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 	SERVICENAME_GCALENDAR = "google-caldav"
