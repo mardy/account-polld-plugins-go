@@ -38,7 +38,7 @@ import (
 
 const (
 	APP_ID           = "dekko.dekkoproject_dekko"
-	gmailDispatchUrl = "https://mail.google.com/mail/mu/mp/#cv/priority/^smartlabel_%s/%s"
+	dekkoDispatchUrl = "dekko://notify/%d/%s/%s"
 	// If there's more than 10 emails in one batch, we don't show 10 notification
 	// bubbles, but instead show one summary. We always show all notifications in the
 	// indicator.
@@ -206,7 +206,7 @@ func (p *GmailPlugin) createNotifications(messages []message) ([]*plugins.PushMe
 			// TRANSLATORS: the first %s refers to the email "subject", the second %s refers "from"
 			body := fmt.Sprintf(gettext.Gettext("%s\n%s"), hdr[hdrSUBJECT], msg.Snippet)
 			// fmt with label personal and threadId
-			action := fmt.Sprintf(gmailDispatchUrl, "personal", msg.ThreadId)
+			action := fmt.Sprintf(dekkoDispatchUrl, p.accountId, "INBOX", msg.Id)
 			epoch := hdr.getEpoch()
 			pushMsgMap[msg.ThreadId] = plugins.NewStandardPushMessage(summary, body, action, avatarPath, epoch)
 		} else {
@@ -230,7 +230,7 @@ func (p *GmailPlugin) handleOverflow(pushMsg []*plugins.PushMessage) *plugins.Pu
 	body := ""
 
 	// fmt with label personal and no threadId
-	action := fmt.Sprintf(gmailDispatchUrl, "personal")
+	action := fmt.Sprintf(dekkoDispatchUrl, p.accountId, "INBOX")
 	epoch := time.Now().Unix()
 
 	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
