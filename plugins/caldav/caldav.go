@@ -86,17 +86,17 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 	for id, calendar := range calendars {
 		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, id)
 		if err != nil {
-			log.Print("\tcalendar: ", calendar, ", cannot load previous sync date: ", err, ". Try next time.")
+			log.Print("\tcalendar: ", id, ", cannot load previous sync date: ", err, ". Try next time.")
 			continue
 		} else {
-			log.Print("\tcalendar: ", calendar, " Id: ", id, ": last sync date: ", lastSyncDate)
+			log.Print("\tcalendar: ", id, " Url: ", calendar, " last sync date: ", lastSyncDate)
 		}
 
 		var needSync bool
 		needSync = (len(lastSyncDate) == 0)
 
 		if !needSync {
-			resp, err := p.requestChanges(authData, id, lastSyncDate)
+			resp, err := p.requestChanges(authData, calendar, lastSyncDate)
 			if err != nil {
 				log.Print("\tERROR: Fail to query for changes: ", err)
 				continue
@@ -154,7 +154,7 @@ func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
 }
 
 func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
-	u, err := url.Parse("https://my.owndrive.com:443")
+	u, err := url.Parse(calendar)
 	if err != nil {
 		return nil, err
 	}
@@ -164,9 +164,9 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
         return nil, err
     }
 
-    endDate := startDate.AddDate(0, 0, 1)
-
-	u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
+    endDate := time.Now()
+    log.Print("Calendar Url:", calendar)
+	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
 
 	//GET https://my.owndrive.com:443/remote.php/caldav/calendars/renatox%40gmail.com/teste/
     query := "<c:calendar-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\">\n"
