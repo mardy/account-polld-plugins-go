@@ -24,7 +24,6 @@ import (
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/ubuntu-push/click"
-	"launchpad.net/ubuntu-push/click/cblacklist"
 )
 
 type AccountManager struct {
@@ -52,8 +51,6 @@ var (
 	clickNotInstalledError = errors.New("Click not installed")
 )
 
-var isBlacklisted = cblacklist.IsBlacklisted
-
 func NewAccountManager(watcher *accounts.Watcher, postWatch chan *PostWatch, plugin plugins.Plugin) *AccountManager {
 	return &AccountManager{
 		watcher:   watcher,
@@ -78,11 +75,6 @@ func (a *AccountManager) Poll(bootstrap bool) {
 			log.Println("Account", a.authData.AccountId, "no longer enabled")
 			return
 		}
-	}
-
-	if id, ok := click.ParseAppId(string(a.plugin.ApplicationId())); (ok == nil) && isBlacklisted(id) {
-		log.Printf("Account %d is blacklisted, not polling", a.authData.AccountId)
-		return
 	}
 
 	if a.penaltyCount > 0 {

@@ -50,36 +50,36 @@ func (p *GCalendarPlugin) ApplicationId() plugins.ApplicationId {
 func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GCALENDAR"); token != "" {
-		log.Print("Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
+		log.Print("calendar: Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
 		authData.AccessToken = token
 	}
 
-	log.Print("Check calendar changes for account:", p.accountId)
+	log.Print("calendar: Check calendar changes for account:", p.accountId)
 
 	syncMonitor := syncmonitor.NewSyncMonitor()
 	if syncMonitor == nil {
-		log.Print("Sync monitor not available yet.")
+		log.Print("calendar: Sync monitor not available yet.")
 		return nil, nil
 	}
 
 	state, err := syncMonitor.State()
 	if err != nil {
-		log.Print("Fail to retrieve sync monitor state ", err)
+		log.Print("calendar: Fail to retrieve sync monitor state ", err)
 		return nil, nil
 	}
 	if state != "idle" {
-		log.Print("Sync monitor is not on 'idle' state, try later!")
+		log.Print("calendar: Sync monitor is not on 'idle' state, try later!")
 		return nil, nil
 	}
 
 	calendars, err := syncMonitor.ListCalendarsByAccount(p.accountId)
 	if err != nil {
-		log.Print("Calendar plugin ", p.accountId, ": cannot load calendars: ", err)
+		log.Print("calendar: Calendar plugin ", p.accountId, ": cannot load calendars: ", err)
 		return nil, nil
 	}
 
 	var calendarsToSync []string
-	log.Print("Number of calendars for account:", p.accountId, " size:", len(calendars))
+	log.Print("calendar: Number of calendars for account:", p.accountId, " size:", len(calendars))
 
 	for id, calendar := range calendars {
 		lastSyncDate, err := syncMonitor.LastSyncDate(p.accountId, id)
@@ -96,15 +96,15 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		if !needSync {
 			resp, err := p.requestChanges(authData.AccessToken, id, lastSyncDate)
 			if err != nil {
-				log.Print("\tERROR: Fail to query for changes: ", err)
+				log.Print("\tcalendar: ERROR: Fail to query for changes: ", err)
 				continue
 			}
 
 			messages, err := p.parseChangesResponse(resp)
 			if err != nil {
-				log.Print("\tERROR: Fail to parse changes: ", err)
+				log.Print("\tcalendar: ERROR: Fail to parse changes: ", err)
 				if err == plugins.ErrTokenExpired {
-					log.Print("\t\tAbort poll")
+					log.Print("\t\tcalendar: Abort poll")
 					return nil, err
 				} else {
 					continue
@@ -114,18 +114,18 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 		}
 
 		if needSync {
-			log.Print("\tCalendar needs sync: ", calendar)
+			log.Print("\tcalendar: Calendar needs sync: ", calendar)
 			calendarsToSync = append(calendarsToSync, id)
 		} else {
-			log.Print("\tFound no calendar updates for account: ", p.accountId, " calendar: ", calendar)
+			log.Print("\tcalendar: Found no calendar updates for account: ", p.accountId, " calendar: ", calendar)
 		}
 	}
 
 	if len(calendarsToSync) > 0 {
-		log.Print("Request account sync")
+		log.Print("calendar: Request account sync")
 		err = syncMonitor.SyncAccount(p.accountId, calendarsToSync)
 		if err != nil {
-			log.Print("ERROR: Fail to start account sync ", p.accountId, " message: ", err)
+			log.Print("calendar: ERROR: Fail to start account sync ", p.accountId, " message: ", err)
 		}
 	}
 
@@ -138,7 +138,7 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 
 	if resp.StatusCode != http.StatusOK {
 		var errResp errorResp
-		log.Print("Invalid response:", errResp.Err.Code)
+		log.Print("calendar: Invalid response:", errResp.Err.Code)
 		if err := decoder.Decode(&errResp); err != nil {
 			return nil, err
 		}
@@ -150,12 +150,12 @@ func (p *GCalendarPlugin) parseChangesResponse(resp *http.Response) ([]event, er
 
 	var events eventList
 	if err := decoder.Decode(&events); err != nil {
-		log.Print("Fail to decode")
+		log.Print("calendar: Fail to decode")
 		return nil, err
 	}
 
 	for _, ev := range events.Events {
-		log.Print("Found event: ", ev.Etag, ev.Summary)
+		log.Print("calendar: Found event: ", ev.Etag, ev.Summary)
 	}
 
 	return events.Events, nil
@@ -184,7 +184,6 @@ func (p *GCalendarPlugin) requestChanges(accessToken string, calendar string, la
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	log.Print("\trequest url: ", u.String())
 
 	return http.DefaultClient.Do(req)
 }
