@@ -193,6 +193,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     req.Header.Set("Prefer", "return-minimal");
     req.Header.Set("Content-Type", "application/xml; charset=utf-8");
     req.SetBasicAuth(authData.UserName, authData.Secret)
+    log.Print("User:", authData.UserName, " Password:", authData.Secret)
 
 	return http.DefaultClient.Do(req)
 }
