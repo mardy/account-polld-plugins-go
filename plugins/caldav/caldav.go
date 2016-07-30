@@ -164,7 +164,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
         return nil, err
     }
 
-    endDate := time.Now()
+    endDate := time.UTC().Now()
     log.Print("Calendar Url:", calendar)
 	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
 
