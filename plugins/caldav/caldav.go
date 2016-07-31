@@ -165,7 +165,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     }
 
     // Start date will be one minute before last sync
-    startDate = startDate.AddDate(0,0,-1)
+    startDate = startDate.Add(time.Duration(-1)*time.Minute)
 
     // End Date will be one year in the future from now
     endDate := time.Now().UTC().AddDate(1,0,0)
