@@ -164,7 +164,13 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
         return nil, err
     }
 
-    endDate := time.Now().UTC()
+    // Start date will be one minute before last sync
+    startDate = startDate.AddDate(0,0,-1)
+
+    // End Date will be one year in the future from now
+    endDate := time.Now().UTC().AddDate(1,0,0)
+
+
     log.Print("Calendar Url:", calendar)
 	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
 
