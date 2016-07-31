@@ -96,15 +96,15 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 		needSync = (len(lastSyncDate) == 0)
 
 		if !needSync {
-			resp, err := p.requestChanges(authData, calendar, lastSyncDate)
+			resp, err := p.requestChanges(authData, calendar, lastSyncDate, true)
 			if err != nil {
-				log.Print("\tERROR: Fail to query for changes: ", err)
+				log.Print("\tERROR: Fail to query for changes with UTC times: ", err)
 				continue
 			}
 
 			needSync, err = p.containEvents(resp)
 			if err != nil {
-				log.Print("\tERROR: Fail to parse changes: ", err)
+				log.Print("\tERROR: Fail to parse changes with UTC times: ", err)
 				if err == plugins.ErrTokenExpired {
 					log.Print("\t\tAbort poll")
 					return nil, err
@@ -112,13 +112,34 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 					continue
 				}
 			}
+
+            if !needSync {
+                // WORKAROUND: Query again without convert times to UTC
+                // if the server does not report the modified time in UTC we try local time
+                resp, err := p.requestChanges(authData, calendar, lastSyncDate, false)
+			    if err != nil {
+				    log.Print("\tERROR: Fail to query for changes with local time: ", err)
+				    continue
+			    }
+
+			    needSync, err = p.containEvents(resp)
+			    if err != nil {
+				    log.Print("\tERROR: Fail to parse changes with local time: ", err)
+				    if err == plugins.ErrTokenExpired {
+					    log.Print("\t\tAbort poll")
+					    return nil, err
+				    } else {
+					    continue
+				    }
+			    }
+            }
 		}
 
 		if needSync {
-			log.Print("\tCalendar needs sync: ", calendar)
+			log.Print("\tCalendar needs sync: ", id)
 			calendarsToSync = append(calendarsToSync, id)
 		} else {
-			log.Print("\tFound no calendar updates for account: ", p.accountId, " calendar: ", calendar)
+			log.Print("\tFound no calendar updates for account: ", p.accountId, " calendar: ", id)
 		}
 	}
 
@@ -153,7 +174,7 @@ func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
     return false, nil
 }
 
-func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
+func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string, useUTCTime bool) (*http.Response, error) {
 	u, err := url.Parse(calendar)
 	if err != nil {
 		return nil, err
@@ -168,7 +189,16 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     startDate = startDate.Add(time.Duration(-1)*time.Minute)
 
     // End Date will be one year in the future from now
-    endDate := time.Now().UTC().AddDate(1,0,0)
+    endDate := time.Now().AddDate(1,0,0)
+
+    var dateFormat string
+    if useUTCTime {
+        dateFormat = "20060102T150405Z"
+        endDate = endDate.UTC()
+    } else {
+        dateFormat = "20060102T150405"
+        startDate = startDate.Local()
+    }
 
 
     log.Print("Calendar Url:", calendar)
@@ -184,7 +214,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     query +=    "<c:comp-filter name=\"VCALENDAR\">\n"
     query +=    "<c:comp-filter name=\"VEVENT\">\n"
     query +=    "<c:prop-filter name=\"LAST-MODIFIED\">\n"
-    query +=        "<c:time-range start=\"" + startDate.Format("20060102T150405Z") + "\" end=\"" + endDate.Format("20060102T150405Z") + "\"/>\n"
+    query +=        "<c:time-range start=\"" + startDate.Format(dateFormat) + "\" end=\"" + endDate.Format(dateFormat) + "\"/>\n"
     query +=    "</c:prop-filter>\n"
     query +=    "</c:comp-filter>\n"
     query +=    "</c:comp-filter>\n"
@@ -199,7 +229,6 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     req.Header.Set("Prefer", "return-minimal");
     req.Header.Set("Content-Type", "application/xml; charset=utf-8");
     req.SetBasicAuth(authData.UserName, authData.Secret)
-    log.Print("User:", authData.UserName, " Password:", authData.Secret)
 
 	return http.DefaultClient.Do(req)
 }
