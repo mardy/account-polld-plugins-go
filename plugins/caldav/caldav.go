@@ -96,15 +96,15 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 		needSync = (len(lastSyncDate) == 0)
 
 		if !needSync {
-			resp, err := p.requestChanges(authData, calendar, lastSyncDate, true)
+			resp, err := p.requestChanges(authData, calendar, lastSyncDate)
 			if err != nil {
-				log.Print("\tERROR: Fail to query for changes with UTC times: ", err)
+				log.Print("\tERROR: Fail to query for changes: ", err)
 				continue
 			}
 
 			needSync, err = p.containEvents(resp)
 			if err != nil {
-				log.Print("\tERROR: Fail to parse changes with UTC times: ", err)
+				log.Print("\tERROR: Fail to parse changes: ", err)
 				if err == plugins.ErrTokenExpired {
 					log.Print("\t\tAbort poll")
 					return nil, err
@@ -112,27 +112,6 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 					continue
 				}
 			}
-
-            if !needSync {
-                // WORKAROUND: Query again without convert times to UTC
-                // if the server does not report the modified time in UTC we try local time
-                resp, err := p.requestChanges(authData, calendar, lastSyncDate, false)
-			    if err != nil {
-				    log.Print("\tERROR: Fail to query for changes with local time: ", err)
-				    continue
-			    }
-
-			    needSync, err = p.containEvents(resp)
-			    if err != nil {
-				    log.Print("\tERROR: Fail to parse changes with local time: ", err)
-				    if err == plugins.ErrTokenExpired {
-					    log.Print("\t\tAbort poll")
-					    return nil, err
-				    } else {
-					    continue
-				    }
-			    }
-            }
 		}
 
 		if needSync {
@@ -174,7 +153,7 @@ func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
     return false, nil
 }
 
-func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string, useUTCTime bool) (*http.Response, error) {
+func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
 	u, err := url.Parse(calendar)
 	if err != nil {
 		return nil, err
@@ -189,17 +168,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     startDate = startDate.Add(time.Duration(-1)*time.Minute)
 
     // End Date will be one year in the future from now
-    endDate := time.Now().AddDate(1,0,0)
-
-    var dateFormat string
-    if useUTCTime {
-        dateFormat = "20060102T150405Z"
-        endDate = endDate.UTC()
-    } else {
-        dateFormat = "20060102T150405"
-        startDate = startDate.Local()
-    }
-
+    endDate := time.Now().AddDate(1,0,0).UTC()
 
     log.Print("Calendar Url:", calendar)
 	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
@@ -214,7 +183,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
     query +=    "<c:comp-filter name=\"VCALENDAR\">\n"
     query +=    "<c:comp-filter name=\"VEVENT\">\n"
     query +=    "<c:prop-filter name=\"LAST-MODIFIED\">\n"
-    query +=        "<c:time-range start=\"" + startDate.Format(dateFormat) + "\" end=\"" + endDate.Format(dateFormat) + "\"/>\n"
+    query +=        "<c:time-range start=\"" + startDate.Format("20060102T150405Z") + "\" end=\"" + endDate.Format("20060102T150405Z") + "\"/>\n"
     query +=    "</c:prop-filter>\n"
     query +=    "</c:comp-filter>\n"
     query +=    "</c:comp-filter>\n"
