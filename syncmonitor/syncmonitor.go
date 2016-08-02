@@ -91,4 +91,3 @@ func (p *SyncMonitor) State() (state string, err error) {
 		return state, err
 	}
 }
-

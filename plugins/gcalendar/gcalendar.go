@@ -25,7 +25,7 @@ import (
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
-  	"launchpad.net/account-polld/syncmonitor"
+	"launchpad.net/account-polld/syncmonitor"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 	pluginName = "gcalendar"
 )
 
-var baseUrl,_ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
+var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
 
 type GCalendarPlugin struct {
 	accountId uint

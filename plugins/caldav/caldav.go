@@ -17,19 +17,19 @@
 package caldav
 
 import (
-    "fmt"
-    "bytes"
+	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-    "io/ioutil"
-    "strings"
-    "time"
+	"strings"
+	"time"
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
-    "launchpad.net/account-polld/syncmonitor"
+	"launchpad.net/account-polld/syncmonitor"
 )
 
 const (
@@ -135,22 +135,22 @@ func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessage
 
 func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
 	defer resp.Body.Close()
-    log.Print("RESPONSE CODE ----:", resp.StatusCode)
-    
+	log.Print("RESPONSE CODE ----:", resp.StatusCode)
+
 	if resp.StatusCode != 207 {
 		var errResp errorResp
 		log.Print("Invalid response:", errResp.Err.Code)
 		return false, nil
 	} else {
-        data, err:= ioutil.ReadAll(resp.Body)
-        if err != nil {
-            return false, err
-        }
-        fmt.Printf("DATA: %s", data)
-        return strings.Contains(string(data), "BEGIN:VEVENT"), nil
-    }
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, err
+		}
+		fmt.Printf("DATA: %s", data)
+		return strings.Contains(string(data), "BEGIN:VEVENT"), nil
+	}
 
-    return false, nil
+	return false, nil
 }
 
 func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
@@ -158,46 +158,46 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
 	if err != nil {
 		return nil, err
 	}
-    startDate, err := time.Parse(time.RFC3339, lastSyncDate)
-    if err != nil {
-        log.Print("Fail to parse date: ", lastSyncDate)
-        return nil, err
-    }
+	startDate, err := time.Parse(time.RFC3339, lastSyncDate)
+	if err != nil {
+		log.Print("Fail to parse date: ", lastSyncDate)
+		return nil, err
+	}
 
-    // Start date will be one minute before last sync
-    startDate = startDate.Add(time.Duration(-1)*time.Minute)
+	// Start date will be one minute before last sync
+	startDate = startDate.Add(time.Duration(-1) * time.Minute)
 
-    // End Date will be one year in the future from now
-    endDate := time.Now().AddDate(1,0,0).UTC()
+	// End Date will be one year in the future from now
+	endDate := time.Now().AddDate(1, 0, 0).UTC()
 
-    log.Print("Calendar Url:", calendar)
+	log.Print("Calendar Url:", calendar)
 	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
 
 	//GET https://my.owndrive.com:443/remote.php/caldav/calendars/renatox%40gmail.com/teste/
-    query := "<c:calendar-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\">\n"
-    query += "<d:prop>\n"
-    query +=    "<d:getetag />\n"
-    query +=    "<c:calendar-data />\n"
-    query += "</d:prop>\n"
-    query += "<c:filter>\n"
-    query +=    "<c:comp-filter name=\"VCALENDAR\">\n"
-    query +=    "<c:comp-filter name=\"VEVENT\">\n"
-    query +=    "<c:prop-filter name=\"LAST-MODIFIED\">\n"
-    query +=        "<c:time-range start=\"" + startDate.Format("20060102T150405Z") + "\" end=\"" + endDate.Format("20060102T150405Z") + "\"/>\n"
-    query +=    "</c:prop-filter>\n"
-    query +=    "</c:comp-filter>\n"
-    query +=    "</c:comp-filter>\n"
-    query += "</c:filter>\n"
-    query += "</c:calendar-query>\n"
-    log.Print("Query: ", query)
+	query := "<c:calendar-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\">\n"
+	query += "<d:prop>\n"
+	query += "<d:getetag />\n"
+	query += "<c:calendar-data />\n"
+	query += "</d:prop>\n"
+	query += "<c:filter>\n"
+	query += "<c:comp-filter name=\"VCALENDAR\">\n"
+	query += "<c:comp-filter name=\"VEVENT\">\n"
+	query += "<c:prop-filter name=\"LAST-MODIFIED\">\n"
+	query += "<c:time-range start=\"" + startDate.Format("20060102T150405Z") + "\" end=\"" + endDate.Format("20060102T150405Z") + "\"/>\n"
+	query += "</c:prop-filter>\n"
+	query += "</c:comp-filter>\n"
+	query += "</c:comp-filter>\n"
+	query += "</c:filter>\n"
+	query += "</c:calendar-query>\n"
+	log.Print("Query: ", query)
 	req, err := http.NewRequest("REPORT", u.String(), bytes.NewBufferString(query))
 	if err != nil {
 		return nil, err
 	}
-    req.Header.Set("Depth", "1");
-    req.Header.Set("Prefer", "return-minimal");
-    req.Header.Set("Content-Type", "application/xml; charset=utf-8");
-    req.SetBasicAuth(authData.UserName, authData.Secret)
+	req.Header.Set("Depth", "1")
+	req.Header.Set("Prefer", "return-minimal")
+	req.Header.Set("Content-Type", "application/xml; charset=utf-8")
+	req.SetBasicAuth(authData.UserName, authData.Secret)
 
 	return http.DefaultClient.Do(req)
 }
