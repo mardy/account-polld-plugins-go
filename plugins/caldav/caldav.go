@@ -171,9 +171,7 @@ func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar stri
 	endDate := time.Now().AddDate(1, 0, 0).UTC()
 
 	log.Print("Calendar Url:", calendar)
-	//u.Path += "/remote.php/caldav/calendars/renatox@gmail.com/" + calendar
 
-	//GET https://my.owndrive.com:443/remote.php/caldav/calendars/renatox%40gmail.com/teste/
 	query := "<c:calendar-query xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\">\n"
 	query += "<d:prop>\n"
 	query += "<d:getetag />\n"
