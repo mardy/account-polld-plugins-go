@@ -1,3 +1,9 @@
+account-polld (0.1+16.10.20160804-0ubuntu1) yakkety; urgency=medium
+
+  * Implement the caldav plugin to query for changes on caldav sources.
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Thu, 04 Aug 2016 13:40:10 +0000
+
 account-polld (0.1+16.10.20160719.2-0ubuntu1) yakkety; urgency=medium
 
   [ Renato Araujo Oliveira Filho ]
