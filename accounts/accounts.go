@@ -22,7 +22,7 @@ package accounts
 #include <glib.h>
 #include "account-watcher.h"
 
-AccountWatcher *watch_for_service_type(const char *service_type);
+AccountWatcher *watch();
 */
 import "C"
 import (
@@ -47,6 +47,8 @@ type AuthData struct {
 	ClientSecret string
 	AccessToken  string
 	TokenSecret  string
+	Secret       string
+	UserName     string
 }
 
 var (
@@ -54,12 +56,10 @@ var (
 	authChannelsLock sync.Mutex
 )
 
-// NewWatcher creates a new account watcher for the given service names
-func NewWatcher(serviceType string) *Watcher {
+// NewWatcher creates a new account watcher
+func NewWatcher() *Watcher {
 	w := new(Watcher)
-	cServiceType := C.CString(serviceType)
-	defer C.free(unsafe.Pointer(cServiceType))
-	w.watcher = C.watch_for_service_type(cServiceType)
+	w.watcher = C.watch()
 
 	ch := make(chan AuthData)
 	w.C = ch
@@ -70,14 +70,24 @@ func NewWatcher(serviceType string) *Watcher {
 	return w
 }
 
+func (w *Watcher) AddService(serviceId string) {
+	C.account_watcher_add_service(w.watcher, C.CString(serviceId))
+}
+
+// Walk through the enabled accounts, and get auth tokens for each of them.
+// The new access token will be delivered over the watcher's channel.
+func (w *Watcher) Run() {
+	C.account_watcher_run(w.watcher)
+}
+
 // Refresh requests that the token for the given account be refreshed.
 // The new access token will be delivered over the watcher's channel.
-func (w *Watcher) Refresh(accountId uint) {
-	C.account_watcher_refresh(w.watcher, C.uint(accountId))
+func (w *Watcher) Refresh(accountId uint, serviceName string) {
+	C.account_watcher_refresh(w.watcher, C.uint(accountId), C.CString(serviceName))
 }
 
 //export authCallback
-func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userData unsafe.Pointer) {
+func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userName *C.char, secret *C.char, userData unsafe.Pointer) {
 	// Ideally the first argument would be of type
 	// *C.AccountWatcher, but that fails with Go 1.2.
 	authChannelsLock.Lock()
@@ -109,6 +119,12 @@ func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char,
 	}
 	if tokenSecret != nil {
 		data.TokenSecret = C.GoString(tokenSecret)
+	}
+	if secret != nil {
+		data.Secret = C.GoString(secret)
+	}
+	if userName != nil {
+		data.UserName = C.GoString(userName)
 	}
 	ch <- data
 }

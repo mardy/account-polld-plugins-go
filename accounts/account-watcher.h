@@ -30,12 +30,18 @@ typedef void (*AccountEnabledCallback)(AccountWatcher *watcher,
                                        const char *client_secret,
                                        const char *access_token,
                                        const char *token_secret,
+                                       const char *user_name,
+                                       const char *secret,
                                        void *user_data);
 
-AccountWatcher *account_watcher_new(const char *service_type,
-                                    AccountEnabledCallback callback,
+AccountWatcher *account_watcher_new(AccountEnabledCallback callback,
                                     void *user_data);
+void account_watcher_add_service(AccountWatcher *watcher,
+                                 char *serviceId);
+void account_watcher_run(AccountWatcher *watcher);
 
-void account_watcher_refresh(AccountWatcher *watcher, unsigned int account_id);
+void account_watcher_refresh(AccountWatcher *watcher,
+                             unsigned int account_id,
+                             const char *service_name);
 
 #endif

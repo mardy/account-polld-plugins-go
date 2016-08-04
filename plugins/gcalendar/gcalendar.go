@@ -25,6 +25,7 @@ import (
 
 	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
+	"launchpad.net/account-polld/syncmonitor"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 	pluginName = "gcalendar"
 )
 
-var baseUrl,_ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
+var baseUrl, _ = url.Parse("https://www.googleapis.com/calendar/v3/calendars/")
 
 type GCalendarPlugin struct {
 	accountId uint
@@ -55,7 +56,7 @@ func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMess
 
 	log.Print("calendar: Check calendar changes for account:", p.accountId)
 
-	syncMonitor := NewSyncMonitor()
+	syncMonitor := syncmonitor.NewSyncMonitor()
 	if syncMonitor == nil {
 		log.Print("calendar: Sync monitor not available yet.")
 		return nil, nil

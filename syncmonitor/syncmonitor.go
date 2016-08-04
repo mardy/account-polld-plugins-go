@@ -14,7 +14,7 @@
  with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package gcalendar
+package syncmonitor
 
 import (
 	"log"
@@ -91,4 +91,3 @@ func (p *SyncMonitor) State() (state string, err error) {
 		return state, err
 	}
 }
-
