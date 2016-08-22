@@ -1,4 +1,4 @@
-Source: account-polld
+Source: account-polld-plugins-go
 Section: net
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
@@ -6,7 +6,6 @@ Build-Depends: debhelper (>= 9),
                dh-golang,
                dh-translations,
                golang-go,
-               golang-go-dbus-dev,
                golang-go-xdg-dev,
                golang-gocheck-dev,
                golang-ubuntu-push-dev,
@@ -21,16 +20,13 @@ Homepage: https://launchpad.net/account-polld
 Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/account-polld/trunk/files
 Vcs-Bzr: lp:account-polld
 
-Package: account-polld
+Package: account-polld-plugins-go
 Architecture: any
 Depends: accountsservice,
          ${misc:Depends},
          ${shlibs:Depends},
 Built-Using: ${misc:Built-Using}
 Recommends: accountsservice,
-Description: Poll daemon for notifications though the Ubuntu Push Client
- This component polls twitter and gmail for updates and
- communicates with the postal service provided by the ubuntu push client
- to expose notifications for the click webapps for the aforementioned
- services.
+Description: Poll daemon for notifications - Go plugins
+ Twitter and GMail plugins for account-polld.
 X-Ubuntu-Use-Langpack: yes
