@@ -126,51 +126,18 @@ func (w *Ipc) PostMessages(batches []*PushMessageBatch) {
 		notifications = append(notifications, notifs...)
 	}
 
-	var reply map[string]interface{}
+	reply := make(map[string]interface{})
 	reply["notifications"] = notifications
 	w.output.Encode(reply)
 }
 
-/*
-func authCallback(watcher unsafe.Pointer, accountId C.uint, serviceType *C.char, serviceName *C.char, error *C.GError, enabled C.int, clientId, clientSecret, accessToken, tokenSecret *C.char, userName *C.char, secret *C.char, userData unsafe.Pointer) {
-	// Ideally the first argument would be of type
-	// *C.AccountIpc, but that fails with Go 1.2.
-	authChannelsLock.Lock()
-	ch := authChannels[(*C.AccountIpc)(watcher)]
-	authChannelsLock.Unlock()
-	if ch == nil {
-		// Log the error
-		return
+func (w *Ipc) PostError(err error) {
+	errorMap := make(map[string]string)
+	errorMap["message"] = err.Error()
+	if err == ErrTokenExpired {
+		errorMap["code"] = "ERR_INVALID_AUTH"
 	}
-
-	var data AuthData
-	data.AccountId = uint(accountId)
-	data.ServiceName = C.GoString(serviceName)
-	data.ServiceType = C.GoString(serviceType)
-	if error != nil {
-		data.Error = errors.New(C.GoString((*C.char)(error.message)))
-	}
-	if enabled != 0 {
-		data.Enabled = true
-	}
-	if clientId != nil {
-		data.ClientId = C.GoString(clientId)
-	}
-	if clientSecret != nil {
-		data.ClientSecret = C.GoString(clientSecret)
-	}
-	if accessToken != nil {
-		data.AccessToken = C.GoString(accessToken)
-	}
-	if tokenSecret != nil {
-		data.TokenSecret = C.GoString(tokenSecret)
-	}
-	if secret != nil {
-		data.Secret = C.GoString(secret)
-	}
-	if userName != nil {
-		data.UserName = C.GoString(userName)
-	}
-	ch <- data
+	reply := make(map[string]interface{})
+	reply["error"] = errorMap
+	w.output.Encode(reply)
 }
-*/

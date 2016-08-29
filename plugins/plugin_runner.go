@@ -39,7 +39,7 @@ func NewPluginRunner(plugin Plugin) *PluginRunner {
 	return &PluginRunner{
 		watcher:   NewIpc(authChan),
 		plugin:    plugin,
-		postWatch: make(chan *PostWatch),
+		postWatch: make(chan *PostWatch, 1),
 		authChan:  authChan,
 	}
 }
@@ -54,7 +54,10 @@ func (r *PluginRunner) Run() {
 		select {
 		case data := <-r.authChan:
 			log.Println("Got data, access token is ", data.AccessToken)
-			r.poll(&data)
+			err := r.poll(&data)
+			if err != nil {
+				r.watcher.PostError(err)
+			}
 		case post := <-r.postWatch:
 			log.Println("Got reply")
 			r.watcher.PostMessages(post.batches)
