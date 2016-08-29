@@ -43,7 +43,6 @@ const (
 type twitterPlugin struct {
 	lastMentionId       int64
 	lastDirectMessageId int64
-	bootstrap           bool
 }
 
 func New() plugins.Plugin {
@@ -222,10 +221,6 @@ func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.Pus
 	dms, err := p.parseDirectMessages(resp)
 	if err != nil {
 		return
-	}
-	if !p.bootstrap {
-		p.bootstrap = true
-		return nil, nil
 	}
 	if statuses != nil && len(statuses.Messages) > 0 {
 		batches = append(batches, statuses)
