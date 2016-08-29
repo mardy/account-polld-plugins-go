@@ -22,16 +22,10 @@ import (
 	"log"
 
 	"launchpad.net/account-polld/gettext"
-	"launchpad.net/account-polld/ipc"
 	"launchpad.net/account-polld/plugins"
-	//"launchpad.net/account-polld/plugins/gmail"
+	"launchpad.net/account-polld/plugins/twitter"
 	"launchpad.net/account-polld/qtcontact"
 )
-
-type PostWatch struct {
-	appId   plugins.ApplicationId
-	batches []*plugins.PushMessageBatch
-}
 
 type AccountKey struct {
 	serviceId   string
@@ -68,12 +62,21 @@ func main() {
 
 	log.Println("Starting app")
 
-	watcher := ipc.NewIpc()
+	runner := plugins.NewPluginRunner(twitter.New())
+	runner.Run()
+	/*
+	postWatch := make(chan *plugins.PostWatch)
+
+	watcher := plugins.NewIpc()
 	go watcher.Run()
 	for {
 		select {
 		case data := <-watcher.C:
 			log.Println("Got data, access token is ", data.AccessToken)
+		case post := <-postWatch:
+			log.Println("Got reply")
+			watcher.PostMessages(post.batches)
 		}
 	}
+	*/
 }

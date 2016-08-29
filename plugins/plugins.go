@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"launchpad.net/account-polld/accounts"
 	"launchpad.net/go-xdg/v0"
 )
 
@@ -43,7 +42,7 @@ func init() {
 // ApplicationId returns the APP_ID of the delivery target for Post Office.
 type Plugin interface {
 	ApplicationId() ApplicationId
-	Poll(*accounts.AuthData) ([]*PushMessageBatch, error)
+	Poll(*AuthData) ([]*PushMessageBatch, error)
 }
 
 // AuthTokens is a map with tokens the plugins are to use to make requests.

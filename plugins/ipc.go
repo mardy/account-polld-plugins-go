@@ -14,7 +14,7 @@
  with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ipc
+package plugins
 
 import "C"
 import (
@@ -24,8 +24,8 @@ import (
 )
 
 type Ipc struct {
-	C       chan AuthData
-	input *json.Decoder
+	C      chan AuthData
+	input  *json.Decoder
 	output *json.Encoder
 }
 
@@ -51,12 +51,12 @@ type JsonInputMessage struct {
 	Auth map[string]interface{}
 }
 
-func NewIpc() *Ipc {
+func NewIpc(authData chan AuthData) *Ipc {
 	w := new(Ipc)
 	w.input = json.NewDecoder(os.Stdin)
 	w.output = json.NewEncoder(os.Stdout)
 
-	w.C = make(chan AuthData)
+	w.C = authData
 
 	return w
 }
@@ -73,14 +73,62 @@ func (w *Ipc) Run() {
 		var data AuthData
 		data.ApplicationId = msg.ApplicationId
 		data.AccountId = msg.AccountId
-		if v, ok := msg.Auth["accessToken"]; ok {
-			data.AccessToken = v.(string)
-		}
 		if v, ok := msg.Auth["clientId"]; ok {
 			data.ClientId = v.(string)
 		}
+		if v, ok := msg.Auth["clientSecret"]; ok {
+			data.ClientSecret = v.(string)
+		}
+		if v, ok := msg.Auth["accessToken"]; ok {
+			data.AccessToken = v.(string)
+		}
+		if v, ok := msg.Auth["tokenSecret"]; ok {
+			data.TokenSecret = v.(string)
+		}
+		if v, ok := msg.Auth["secret"]; ok {
+			data.Secret = v.(string)
+		}
+		if v, ok := msg.Auth["userName"]; ok {
+			data.UserName = v.(string)
+		}
 		w.C <- data
 	}
+}
+
+func (w *Ipc) PostMessages(batches []*PushMessageBatch) {
+	var notifications []*PushMessage
+
+	for _, batch := range batches {
+		notifs := batch.Messages
+		overflowing := len(notifs) > batch.Limit
+
+		for i, n := range notifs {
+			// Play sound and vibrate on first notif only.
+			if i > 0 {
+				n.Notification.Vibrate = false
+				n.Notification.Sound = ""
+			}
+
+			// We're overflowing, so no popups.
+			// See LP: #1527171
+			if overflowing {
+				n.Notification.Card.Popup = false
+			}
+		}
+
+		if overflowing {
+			n := batch.OverflowHandler(notifs)
+			n.Notification.Card.Persist = false
+			n.Notification.Vibrate = false
+			notifs = append(notifs, n)
+		}
+
+		notifications = append(notifications, notifs...)
+	}
+
+	var reply map[string]interface{}
+	reply["notifications"] = notifications
+	w.output.Encode(reply)
 }
 
 /*

@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/plugins/twitter/oauth" // "github.com/garyburd/go-oauth/oauth"
@@ -55,7 +54,7 @@ func (p *twitterPlugin) ApplicationId() plugins.ApplicationId {
 	return "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
 }
 
-func (p *twitterPlugin) request(authData *accounts.AuthData, path string) (*http.Response, error) {
+func (p *twitterPlugin) request(authData *plugins.AuthData, path string) (*http.Response, error) {
 	// Resolve path relative to API base URL.
 	u, err := baseUrl.Parse(path)
 	if err != nil {
@@ -198,7 +197,7 @@ func (p *twitterPlugin) consolidateDirectMessages(pushMsg []*plugins.PushMessage
 	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 }
 
-func (p *twitterPlugin) Poll(authData *accounts.AuthData) (batches []*plugins.PushMessageBatch, err error) {
+func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.PushMessageBatch, err error) {
 	url := "statuses/mentions_timeline.json"
 	if p.lastMentionId > 0 {
 		url = fmt.Sprintf("%s?since_id=%d", url, p.lastMentionId)
