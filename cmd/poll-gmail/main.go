@@ -27,21 +27,6 @@ import (
 	"launchpad.net/account-polld/qtcontact"
 )
 
-type AccountKey struct {
-	serviceId   string
-	accountId   uint
-}
-
-/* Use identifiers and API keys provided by the respective webapps which are the official
-   end points for the notifications */
-const (
-	SERVICENAME_DEKKO     = "dekko.dekkoproject_dekko"
-	SERVICENAME_GMAIL     = "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail"
-	SERVICENAME_TWITTER   = "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter"
-	SERVICENAME_GCALENDAR = "google-caldav"
-	SERVICENAME_OCALENDAR = "owncloud-caldav"
-)
-
 var mainLoopOnce sync.Once
 
 func init() {
@@ -64,19 +49,4 @@ func main() {
 
 	runner := plugins.NewPluginRunner(twitter.New())
 	runner.Run()
-	/*
-	postWatch := make(chan *plugins.PostWatch)
-
-	watcher := plugins.NewIpc()
-	go watcher.Run()
-	for {
-		select {
-		case data := <-watcher.C:
-			log.Println("Got data, access token is ", data.AccessToken)
-		case post := <-postWatch:
-			log.Println("Got reply")
-			watcher.PostMessages(post.batches)
-		}
-	}
-	*/
 }
