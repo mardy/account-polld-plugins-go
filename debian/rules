@@ -14,8 +14,6 @@ export DH_GOLANG_INSTALL_ALL := 1
 
 override_dh_auto_install:
 	dh_auto_install -O--buildsystem=golang
-	rm \
-		${CURDIR}/debian/account-polld/usr/bin/account-watcher-test
 	# all our libs are private
 	rm -r \
 		${CURDIR}/debian/account-polld/usr/share/gocode
