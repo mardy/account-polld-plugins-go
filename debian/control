@@ -8,10 +8,6 @@ Build-Depends: debhelper (>= 9),
                golang-go,
                golang-go-xdg-dev,
                golang-gocheck-dev,
-               golang-ubuntu-push-dev,
-               libaccounts-glib-dev,
-               libclick-0.4-dev,
-               libsignon-glib-dev,
                qt5-default,
                qtbase5-dev,
                qtpim5-dev,
@@ -28,5 +24,5 @@ Depends: accountsservice,
 Built-Using: ${misc:Built-Using}
 Recommends: accountsservice,
 Description: Poll daemon for notifications - Go plugins
- Twitter and GMail plugins for account-polld.
+ Twitter, GMail, Google Calendar and Caldav plugins for account-polld.
 X-Ubuntu-Use-Langpack: yes

@@ -16,12 +16,7 @@ override_dh_auto_install:
 	dh_auto_install -O--buildsystem=golang
 	# all our libs are private
 	rm -r \
-		${CURDIR}/debian/account-polld/usr/share/gocode
-	# setup online accounts service files
-	mkdir -p \
-		${CURDIR}/debian/account-polld/usr/share/applications
-	cp ${CURDIR}/data/account-polld.desktop \
-		${CURDIR}/debian/account-polld/usr/share/applications/
+		${CURDIR}/debian/account-polld-plugins-go/usr/share/gocode
 	# translations
 	appname=account-polld; \
 	for pofile in po/*.po; do \
