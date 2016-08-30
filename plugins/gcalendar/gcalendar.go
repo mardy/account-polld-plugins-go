@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 
-	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/syncmonitor"
 )
@@ -39,19 +38,23 @@ type GCalendarPlugin struct {
 	accountId uint
 }
 
-func New(accountId uint) *GCalendarPlugin {
-	return &GCalendarPlugin{accountId: accountId}
+func New() *GCalendarPlugin {
+	return &GCalendarPlugin{accountId: 0}
 }
 
 func (p *GCalendarPlugin) ApplicationId() plugins.ApplicationId {
 	return plugins.ApplicationId(APP_ID)
 }
 
-func (p *GCalendarPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
+func (p *GCalendarPlugin) Poll(authData *plugins.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GCALENDAR"); token != "" {
 		log.Print("calendar: Using token from: ACCOUNT_POLLD_TOKEN_GCALENDAR env var")
 		authData.AccessToken = token
+	}
+
+	if p.accountId != authData.AccountId {
+		p.accountId = authData.AccountId
 	}
 
 	log.Print("calendar: Check calendar changes for account:", p.accountId)

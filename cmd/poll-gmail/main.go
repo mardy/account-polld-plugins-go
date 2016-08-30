@@ -19,11 +19,9 @@ package main
 import (
 	"sync"
 
-	"log"
-
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/twitter"
+	"launchpad.net/account-polld/plugins/gmail"
 	"launchpad.net/account-polld/qtcontact"
 )
 
@@ -45,8 +43,6 @@ func main() {
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
-	log.Println("Starting app")
-
-	runner := plugins.NewPluginRunner(twitter.New())
+	runner := plugins.NewPluginRunner(gmail.New())
 	runner.Run()
 }

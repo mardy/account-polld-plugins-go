@@ -30,7 +30,6 @@ import (
 
 	"log"
 
-	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/qtcontact"
@@ -95,24 +94,29 @@ func (ids reportedIdMap) persist(accountId uint) (err error) {
 	return nil
 }
 
-func New(accountId uint) *GmailPlugin {
-	reportedIds, err := idsFromPersist(accountId)
-	if err != nil {
-		log.Print("gmail plugin ", accountId, ": cannot load previous state from storage: ", err)
-	} else {
-		log.Print("gmail plugin ", accountId, ": last state loaded from storage")
-	}
-	return &GmailPlugin{reportedIds: reportedIds, accountId: accountId}
+func New() *GmailPlugin {
+	return &GmailPlugin{ accountId: 0 }
 }
 
 func (p *GmailPlugin) ApplicationId() plugins.ApplicationId {
 	return plugins.ApplicationId(APP_ID)
 }
 
-func (p *GmailPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
+func (p *GmailPlugin) Poll(authData *plugins.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_GMAIL"); token != "" {
 		authData.AccessToken = token
+	}
+
+	if p.accountId != authData.AccountId {
+		p.accountId = authData.AccountId
+		reportedIds, err := idsFromPersist(p.accountId)
+		if err != nil {
+			log.Print("gmail plugin ", p.accountId, ": cannot load previous state from storage: ", err)
+		} else {
+			log.Print("gmail plugin ", p.accountId, ": last state loaded from storage")
+		}
+		p.reportedIds = reportedIds
 	}
 
 	resp, err := p.requestMessageList(authData.AccessToken)

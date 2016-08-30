@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"launchpad.net/account-polld/accounts"
 	"launchpad.net/account-polld/plugins"
 	"launchpad.net/account-polld/syncmonitor"
 )
@@ -41,19 +40,23 @@ type CalDavPlugin struct {
 	accountId uint
 }
 
-func New(accountId uint) *CalDavPlugin {
-	return &CalDavPlugin{accountId: accountId}
+func New() *CalDavPlugin {
+	return &CalDavPlugin{accountId: 0}
 }
 
 func (p *CalDavPlugin) ApplicationId() plugins.ApplicationId {
 	return plugins.ApplicationId(APP_ID)
 }
 
-func (p *CalDavPlugin) Poll(authData *accounts.AuthData) ([]*plugins.PushMessageBatch, error) {
+func (p *CalDavPlugin) Poll(authData *plugins.AuthData) ([]*plugins.PushMessageBatch, error) {
 	// This envvar check is to ease testing.
 	if token := os.Getenv("ACCOUNT_POLLD_TOKEN_CALDAV"); token != "" {
 		log.Print("Using token from: ACCOUNT_POLLD_TOKEN_CALDAV env var")
 		authData.AccessToken = token
+	}
+
+	if p.accountId != authData.AccountId {
+		p.accountId = authData.AccountId
 	}
 
 	log.Print("Check calendar changes for account:", p.accountId)
@@ -153,7 +156,7 @@ func (p *CalDavPlugin) containEvents(resp *http.Response) (bool, error) {
 	return false, nil
 }
 
-func (p *CalDavPlugin) requestChanges(authData *accounts.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
+func (p *CalDavPlugin) requestChanges(authData *plugins.AuthData, calendar string, lastSyncDate string) (*http.Response, error) {
 	u, err := url.Parse(calendar)
 	if err != nil {
 		return nil, err
