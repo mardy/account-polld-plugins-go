@@ -1,5 +1,5 @@
-account-polld-plugins-go (0.1+16.10.20160804-0ubuntu1) yakkety; urgency=medium
+account-polld-plugins-go (0.1-0ubuntu1) UNRELEASED; urgency=medium
 
-  * Implement the caldav plugin to query for changes on caldav sources.
+  * Initial release
 
- -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Thu, 04 Aug 2016 13:40:10 +0000
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Thu, 08 Sep 2016 16:05:57 +0300
