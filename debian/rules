@@ -22,7 +22,7 @@ override_dh_auto_install:
 	for pofile in po/*.po; do \
 		pofilename="$${pofile##*/}"; \
 		langcode="$${pofilename%.*}"; \
-		localedir="debian/$$appname/usr/share/locale/$$langcode/LC_MESSAGES"; \
+		localedir="debian/account-polld-plugins-go/usr/share/locale/$$langcode/LC_MESSAGES"; \
 		mkdir -p $$localedir; \
 		mofile="$$localedir/$$appname.mo"; \
 		msgfmt -o $$mofile $$pofile; \
