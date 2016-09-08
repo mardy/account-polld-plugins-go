@@ -27,6 +27,10 @@ override_dh_auto_install:
 		mofile="$$localedir/$$appname.mo"; \
 		msgfmt -o $$mofile $$pofile; \
 	done
+	# manifest files
+	manifestdir="debian/account-polld-plugins-go/usr/share/account-polld/plugins"; \
+	mkdir -p "$$manifestdir"; \
+	cp data/polld-*.json "$$manifestdir"
 
 override_dh_strip:
 	echo "Skipping strip (LP: #1318027)"
