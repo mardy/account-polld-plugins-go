@@ -5,6 +5,21 @@ export DH_OPTIONS
 export DH_GOPKG := launchpad.net/account-polld
 export DH_GOLANG_INSTALL_ALL := 1
 
+# Fix copied from https://bugs.launchpad.net/bugs/1431486
++DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+ifneq (,$(filter $(DEB_HOST_ARCH), arm64 powerpc ppc64el))
+  pkg_configs = Qt5Core Qt5Contacts
+  export CGO_CFLAGS := \
+    $(shell $(foreach pkg, $(pkg_configs), pkg-config --cflags $(pkg); ))
+  export CGO_CXXFLAGS := $(CGO_CFLAGS)
+  export CGO_LDFLAGS := \
+    $(shell $(foreach pkg, $(pkg_configs), pkg-config --libs $(pkg); ))
+  $(warning setting CGO_CFLAGS   = $(CGO_CFLAGS))
+  $(warning setting CGO_CXXFLAGS = $(CGO_CXXFLAGS))
+  $(warning setting CGO_LDFLAGS  = $(CGO_LDFLAGS))
+endif
+
 %:
 	dh $@ \
 		--buildsystem=golang \
