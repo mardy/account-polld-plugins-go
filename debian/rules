@@ -24,6 +24,7 @@ endif
 	dh $@ \
 		--buildsystem=golang \
 		--with=golang \
+		--with=migrations \
 		--with=translations \
 		--fail-missing
 
