@@ -19,6 +19,7 @@ package twitter
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -38,6 +39,7 @@ const (
 	maxIndividualDirectMessages         = 2
 	consolidatedDirectMessageIndexStart = maxIndividualDirectMessages
 	twitterDispatchUrlBase              = "https://mobile.twitter.com"
+	pluginName                          = "twitter"
 )
 
 type twitterPlugin struct {
@@ -196,7 +198,28 @@ func (p *twitterPlugin) consolidateDirectMessages(pushMsg []*plugins.PushMessage
 	return plugins.NewStandardPushMessage(summary, body, action, "", epoch)
 }
 
+func (p *twitterPlugin) loadPersistentData(accountId uint) error {
+	var config twitterPlugin
+	err := plugins.FromPersist(pluginName, accountId, &config)
+	if err == nil {
+		p.lastDirectMessageId = config.lastDirectMessageId
+		p.lastMentionId = config.lastMentionId
+	}
+	return err
+}
+
+func (p *twitterPlugin) savePersistentData(accountId uint) error {
+	err := plugins.Persist(pluginName, accountId, p)
+	if err != nil {
+		log.Print("twitter plugin ", accountId, ": failed to save state: ", err)
+	}
+	return err
+}
+
 func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.PushMessageBatch, err error) {
+	defer p.savePersistentData(authData.AccountId)
+	p.loadPersistentData(authData.AccountId)
+
 	url := "statuses/mentions_timeline.json"
 	if p.lastMentionId > 0 {
 		url = fmt.Sprintf("%s?since_id=%d", url, p.lastMentionId)
