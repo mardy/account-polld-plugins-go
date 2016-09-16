@@ -42,9 +42,13 @@ const (
 	pluginName                          = "twitter"
 )
 
+type twitterConfig struct {
+	LastMentionId       int64 `json:"lastMentionId"`
+	LastDirectMessageId int64 `json:"lastDirectMessageId"`
+}
+
 type twitterPlugin struct {
-	lastMentionId       int64
-	lastDirectMessageId int64
+	config twitterConfig
 }
 
 func New() plugins.Plugin {
@@ -104,7 +108,7 @@ func (p *twitterPlugin) parseStatuses(resp *http.Response) (*plugins.PushMessage
 	if len(statuses) < 1 {
 		return nil, nil
 	}
-	p.lastMentionId = statuses[0].Id
+	p.config.LastMentionId = statuses[0].Id
 
 	pushMsg := make([]*plugins.PushMessage, len(statuses))
 	for i, s := range statuses {
@@ -164,7 +168,7 @@ func (p *twitterPlugin) parseDirectMessages(resp *http.Response) (*plugins.PushM
 	if len(dms) < 1 {
 		return nil, nil
 	}
-	p.lastDirectMessageId = dms[0].Id
+	p.config.LastDirectMessageId = dms[0].Id
 
 	pushMsg := make([]*plugins.PushMessage, len(dms))
 	for i, m := range dms {
@@ -199,17 +203,12 @@ func (p *twitterPlugin) consolidateDirectMessages(pushMsg []*plugins.PushMessage
 }
 
 func (p *twitterPlugin) loadPersistentData(accountId uint) error {
-	var config twitterPlugin
-	err := plugins.FromPersist(pluginName, accountId, &config)
-	if err == nil {
-		p.lastDirectMessageId = config.lastDirectMessageId
-		p.lastMentionId = config.lastMentionId
-	}
+	err := plugins.FromPersist(pluginName, accountId, &p.config)
 	return err
 }
 
 func (p *twitterPlugin) savePersistentData(accountId uint) error {
-	err := plugins.Persist(pluginName, accountId, p)
+	err := plugins.Persist(pluginName, accountId, p.config)
 	if err != nil {
 		log.Print("twitter plugin ", accountId, ": failed to save state: ", err)
 	}
@@ -221,8 +220,10 @@ func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.Pus
 	p.loadPersistentData(authData.AccountId)
 
 	url := "statuses/mentions_timeline.json"
-	if p.lastMentionId > 0 {
-		url = fmt.Sprintf("%s?since_id=%d", url, p.lastMentionId)
+	notifyMentions := false
+	if p.config.LastMentionId > 0 {
+		url = fmt.Sprintf("%s?since_id=%d", url, p.config.LastMentionId)
+		notifyMentions = true
 	}
 	resp, err := p.request(authData, url)
 	if err != nil {
@@ -234,8 +235,10 @@ func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.Pus
 	}
 
 	url = "direct_messages.json"
-	if p.lastDirectMessageId > 0 {
-		url = fmt.Sprintf("%s?since_id=%d", url, p.lastDirectMessageId)
+	notifyMessages := false
+	if p.config.LastDirectMessageId > 0 {
+		url = fmt.Sprintf("%s?since_id=%d", url, p.config.LastDirectMessageId)
+		notifyMessages = true
 	}
 	resp, err = p.request(authData, url)
 	if err != nil {
@@ -245,11 +248,17 @@ func (p *twitterPlugin) Poll(authData *plugins.AuthData) (batches []*plugins.Pus
 	if err != nil {
 		return
 	}
-	if statuses != nil && len(statuses.Messages) > 0 {
-		batches = append(batches, statuses)
+	// Don't send any notifications if this is the very first time we run:
+	// otherwise we would emit notifications for all the old messages too
+	if notifyMentions {
+		if statuses != nil && len(statuses.Messages) > 0 {
+			batches = append(batches, statuses)
+		}
 	}
-	if dms != nil && len(dms.Messages) > 0 {
-		batches = append(batches, dms)
+	if notifyMessages {
+		if dms != nil && len(dms.Messages) > 0 {
+			batches = append(batches, dms)
+		}
 	}
 	return
 }
