@@ -1,0 +1,6 @@
+{
+  "exec": "/usr/bin/poll-gcalendar",
+  "app_id": "com.ubuntu.calendar_calendar",
+  "service_ids": [ "google-caldav" ],
+  "needs_authentication_data": true
+}

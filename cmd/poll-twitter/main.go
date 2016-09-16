@@ -1,5 +1,5 @@
 /*
- Copyright 2016 Canonical Ltd.
+ Copyright 2014 Canonical Ltd.
 
  This program is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License version 3, as published
@@ -17,25 +17,10 @@
 package main
 
 import (
-	"sync"
-
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
-	"launchpad.net/account-polld/qtcontact"
+	"launchpad.net/account-polld/plugins/twitter"
 )
-
-var mainLoopOnce sync.Once
-
-func init() {
-	startMainLoop()
-}
-
-func startMainLoop() {
-	mainLoopOnce.Do(func() {
-		go qtcontact.MainLoopStart()
-	})
-}
 
 func main() {
 	// Initialize i18n
@@ -43,6 +28,6 @@ func main() {
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
-	runner := plugins.NewPluginRunner(gmail.New())
+	runner := plugins.NewPluginRunner(twitter.New())
 	runner.Run()
 }

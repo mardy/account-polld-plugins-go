@@ -28,10 +28,6 @@ import (
 	"launchpad.net/go-xdg/v0"
 )
 
-func init() {
-	cmdName = filepath.Base(os.Args[0])
-}
-
 // Plugin is an interface which the plugins will adhere to for the poll
 // daemon to interact with.
 //
@@ -168,7 +164,7 @@ const (
 // the web service reported that the authentication token has expired.
 var ErrTokenExpired = errors.New("Token expired")
 
-var cmdName string
+var cmdName = "account-polld"
 
 var XdgDataFind = xdg.Data.Find
 var XdgDataEnsure = xdg.Data.Ensure

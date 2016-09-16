@@ -425,7 +425,7 @@ func (s S) TestParseStatuses(c *C) {
 	c.Check(messages[1].Notification.Card.Icon, Equals, "http://a0.twimg.com/profile_images/1305509670/chatMikeTwitter_normal.png")
 	c.Assert(len(messages[1].Notification.Card.Actions), Equals, 1)
 	c.Check(messages[1].Notification.Card.Actions[0], Equals, "https://mobile.twitter.com/mikedroid/statuses/242534402280783873")
-	c.Check(p.lastMentionId, Equals, int64(242613977966850048))
+	c.Check(p.config.LastMentionId, Equals, int64(242613977966850048))
 }
 
 func (s S) TestParseStatusesError(c *C) {
@@ -470,7 +470,7 @@ func (s S) TestParseDirectMessages(c *C) {
 	c.Check(messages[0].Notification.Card.Icon, Equals, "http://a0.twimg.com/profile_images/1751506047/dead_sexy_normal.JPG")
 	c.Assert(len(messages[0].Notification.Card.Actions), Equals, 1)
 	c.Check(messages[0].Notification.Card.Actions[0], Equals, "https://mobile.twitter.com/theSeanCook/messages")
-	c.Check(p.lastDirectMessageId, Equals, int64(240136858829479936))
+	c.Check(p.config.LastDirectMessageId, Equals, int64(240136858829479936))
 }
 
 func (s S) TestParseDirectMessagesError(c *C) {
