@@ -30,6 +30,7 @@ endif
 
 override_dh_auto_install:
 	dh_auto_install -O--buildsystem=golang
+	rm ${CURDIR}/debian/account-polld-plugins-go/usr/bin/qtcontact-test
 	# all our libs are private
 	rm -r \
 		${CURDIR}/debian/account-polld-plugins-go/usr/share/gocode
