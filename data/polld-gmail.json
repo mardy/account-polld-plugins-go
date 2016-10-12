@@ -1,0 +1,5 @@
+{
+  "exec": "/usr/bin/poll-gmail",
+  "app_id": "com.ubuntu.developer.webapps.webapp-gmail_webapp-gmail",
+  "needs_authentication_data": true
+}

@@ -17,25 +17,10 @@
 package main
 
 import (
-	"sync"
-
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
-	"launchpad.net/account-polld/qtcontact"
+	"launchpad.net/account-polld/plugins/caldav"
 )
-
-var mainLoopOnce sync.Once
-
-func init() {
-	startMainLoop()
-}
-
-func startMainLoop() {
-	mainLoopOnce.Do(func() {
-		go qtcontact.MainLoopStart()
-	})
-}
 
 func main() {
 	// Initialize i18n
@@ -43,6 +28,6 @@ func main() {
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
-	runner := plugins.NewPluginRunner(gmail.New())
+	runner := plugins.NewPluginRunner(caldav.New())
 	runner.Run()
 }
