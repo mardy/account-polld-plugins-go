@@ -1,5 +1,6 @@
-account-polld-plugins-go (0.1-0ubuntu1) UNRELEASED; urgency=medium
+account-polld-plugins-go (0.1+16.10.20161012-0ubuntu1) yakkety; urgency=medium
 
   * Initial release
+  * Add all plugin binaries and manifest files
 
- -- Alberto Mardegan <alberto.mardegan@canonical.com>  Thu, 08 Sep 2016 16:05:57 +0300
+ -- Alberto Mardegan <mardy@users.sourceforge.net>  Wed, 12 Oct 2016 08:21:27 +0000
