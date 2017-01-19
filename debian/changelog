@@ -1,5 +1,6 @@
-account-polld-plugins-go (0.1-0ubuntu1) UNRELEASED; urgency=medium
+account-polld-plugins-go (0.1+17.04.20170119-0ubuntu1) zesty; urgency=medium
 
   * Initial release
+  * Add all plugin binaries and manifest files
 
- -- Alberto Mardegan <alberto.mardegan@canonical.com>  Thu, 08 Sep 2016 16:05:57 +0300
+ -- Alberto Mardegan <mardy@users.sourceforge.net>  Thu, 19 Jan 2017 12:05:05 +0000
