@@ -1,0 +1,6 @@
+debian/*.log
+debian/*.substvars
+debian/account-polld-plugins-go/
+debian/files
+debian/*stamp
+obj-*/

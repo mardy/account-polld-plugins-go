@@ -73,22 +73,22 @@ func (w *Ipc) Run() {
 		var data AuthData
 		data.ApplicationId = msg.ApplicationId
 		data.AccountId = msg.AccountId
-		if v, ok := msg.Auth["clientId"]; ok {
+		if v, ok := msg.Auth["ClientId"]; ok {
 			data.ClientId = v.(string)
 		}
-		if v, ok := msg.Auth["clientSecret"]; ok {
+		if v, ok := msg.Auth["ClientSecret"]; ok {
 			data.ClientSecret = v.(string)
 		}
-		if v, ok := msg.Auth["accessToken"]; ok {
+		if v, ok := msg.Auth["AccessToken"]; ok {
 			data.AccessToken = v.(string)
 		}
-		if v, ok := msg.Auth["tokenSecret"]; ok {
+		if v, ok := msg.Auth["TokenSecret"]; ok {
 			data.TokenSecret = v.(string)
 		}
-		if v, ok := msg.Auth["secret"]; ok {
+		if v, ok := msg.Auth["Secret"]; ok {
 			data.Secret = v.(string)
 		}
-		if v, ok := msg.Auth["userName"]; ok {
+		if v, ok := msg.Auth["UserName"]; ok {
 			data.UserName = v.(string)
 		}
 		w.C <- data

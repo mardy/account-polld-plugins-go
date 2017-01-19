@@ -1,0 +1,5 @@
+{
+  "exec": "/usr/bin/poll-twitter",
+  "app_id": "com.ubuntu.developer.webapps.webapp-twitter_webapp-twitter",
+  "needs_authentication_data": true
+}
