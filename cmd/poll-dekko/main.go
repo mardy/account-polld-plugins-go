@@ -21,7 +21,7 @@ import (
 
 	"launchpad.net/account-polld/gettext"
 	"launchpad.net/account-polld/plugins"
-	"launchpad.net/account-polld/plugins/gmail"
+	"launchpad.net/account-polld/plugins/dekko"
 	"launchpad.net/account-polld/qtcontact"
 )
 
@@ -43,6 +43,6 @@ func main() {
 	gettext.Textdomain("account-polld")
 	gettext.BindTextdomain("account-polld", "/usr/share/locale")
 
-	runner := plugins.NewPluginRunner(gmail.New())
+	runner := plugins.NewPluginRunner(dekko.New())
 	runner.Run()
 }

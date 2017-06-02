@@ -1,0 +1,6 @@
+{
+  "exec": "/usr/bin/poll-caldav",
+  "app_id": "com.ubuntu.calendar_calendar",
+  "service_ids": [ "owncloud-caldav" ],
+  "needs_authentication_data": true
+}
