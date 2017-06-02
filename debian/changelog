@@ -1,4 +1,10 @@
-account-polld-plugins-go (0.1-0ubuntu1) UNRELEASED; urgency=medium
+account-polld-plugins-go (0.2-0ubuntu1) vivid; urgency=medium
+
+  * Fix packaging, add missing plugins.
+
+ -- Alberto Mardegan <mardy@users.sourceforge.net>  Fri, 02 Jun 2017 20:18:23 +0300
+
+account-polld-plugins-go (0.1-0ubuntu1) vivid; urgency=medium
 
   * Initial release
 
